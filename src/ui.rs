@@ -62,6 +62,7 @@ pub struct Components {
     window: Option<ApplicationWindow>,
     window_state: WindowState,
     open_btn: Button,
+    fullscreen_btn: Button,
 }
 
 impl Components {
@@ -77,8 +78,13 @@ impl Components {
         );
         open_btn.add(&open_btn_box);
         open_btn.set_can_focus(false);
+        
+        let fullscreen_btn = Button::new_from_icon_name(Some("view-fullscreen-symbolic"), gtk::IconSize::SmallToolbar.into());
+        fullscreen_btn.set_can_focus(false);
+        fullscreen_btn.set_tooltip_text(Some("Toggle fullscreen"));
         Components {
             open_btn,
+            fullscreen_btn,
             window: None,
             window_state: WindowState::load(),
         }
@@ -86,6 +92,10 @@ impl Components {
 
     pub fn close_window(&self) {
         self.window.as_ref().unwrap().destroy();
+    }
+
+    pub fn toggle_fullscreen(&self) {
+        self.window.as_ref().unwrap().fullscreen();
     }
 
     pub fn window(&self) -> &ApplicationWindow {
@@ -388,6 +398,12 @@ impl Ui {
 
         header_bar.pack_end(&self.create_primary_menu_btn(app, &window));
 
+        let comps_ref = self.comps.clone();
+        header_bar.pack_end(&comps.fullscreen_btn);
+        comps
+            .fullscreen_btn
+            .connect_clicked(move |_| comps_ref.borrow().toggle_fullscreen());
+
         let paste_btn =
             Button::new_from_icon_name(Some("edit-paste-symbolic"), gtk::IconSize::SmallToolbar);
         let shell = self.shell.clone();
@@ -514,6 +530,9 @@ fn gtk_window_state_event(event: &gdk::EventWindowState, comps: &mut Components)
     comps.window_state.is_maximized = event
         .get_new_window_state()
         .contains(gdk::WindowState::MAXIMIZED);
+    comps.window_state.is_fullscreen = event
+        .get_new_window_state()
+        .contains(gdk::WindowState::FULLSCREEN); 
 }
 
 fn set_completeopts(shell: &RefCell<Shell>, args: Vec<String>) {
@@ -549,6 +568,7 @@ struct WindowState {
     current_width: i32,
     current_height: i32,
     is_maximized: bool,
+    is_fullscreen: bool,
     show_sidebar: bool,
     sidebar_width: i32,
 }
@@ -559,6 +579,7 @@ impl Default for WindowState {
             current_width: DEFAULT_WIDTH,
             current_height: DEFAULT_HEIGHT,
             is_maximized: false,
+            is_fullscreen: false,
             show_sidebar: false,
             sidebar_width: DEFAULT_SIDEBAR_WIDTH,
         }
