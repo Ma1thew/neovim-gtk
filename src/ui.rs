@@ -398,6 +398,13 @@ impl Ui {
                     settings.set_property_gtk_application_prefer_dark_theme(prefer_dark_theme);
                 }
             }
+            NvimCommand::ToggleFullscreen => {
+                if comps.borrow().window_state.is_fullscreen {
+                    comps.borrow().window.as_ref().unwrap().unfullscreen();
+                } else {
+                    comps.borrow().window.as_ref().unwrap().fullscreen();
+                }
+            }
         }
     }
 

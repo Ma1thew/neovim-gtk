@@ -117,6 +117,7 @@ pub enum NvimCommand {
     ShowProjectView,
     Transparency(f64, f64),
     PreferDarkTheme(bool),
+    ToggleFullscreen,
 }
 
 pub fn call_gui_event(
@@ -192,6 +193,7 @@ pub fn call_gui_event(
                         };
                     ui.set_cursor_blink(blink_count);
                 }
+                "ToggleFullscreen" => ui.on_command(NvimCommand::ToggleFullscreen),
                 _ => error!("Unknown command"),
             };
         }
