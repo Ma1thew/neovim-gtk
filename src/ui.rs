@@ -68,6 +68,7 @@ pub struct Components {
     fs_open_btn: gtk::MenuButton,
     headerbar_revealer: gtk::Revealer,
     fullscreen_header_bar: HeaderBar,
+    fullscreen_headerbar_overlay: gtk::Overlay,
 }
 
 impl Components {
@@ -104,6 +105,7 @@ impl Components {
         fs_fullscreen_btn.set_tooltip_text(Some("Toggle fullscreen"));
         let headerbar_revealer = gtk::Revealer::new();
         let fullscreen_header_bar = HeaderBar::new();
+        let fullscreen_headerbar_overlay = gtk::Overlay::new();
         Components {
             open_btn,
             fullscreen_btn,
@@ -113,6 +115,7 @@ impl Components {
             window_state: WindowState::load(),
             headerbar_revealer,
             fullscreen_header_bar,
+            fullscreen_headerbar_overlay,
         }
     }
 
@@ -163,9 +166,8 @@ impl Ui {
 
         let window = ApplicationWindow::new(app);
         
-        let container = gtk::Overlay::new();
         let main = Paned::new(Orientation::Horizontal);
-        container.add(&main);
+        self.comps.borrow().fullscreen_headerbar_overlay.add_overlay(&main);
 
         {
             // initialize window from comps
@@ -215,7 +217,7 @@ impl Ui {
         }
 
         let update_subtitle = if use_header_bar {
-            Some(self.create_header_bar(app, &container))
+            Some(self.create_header_bar(app))
         } else {
             None
         };
@@ -259,7 +261,7 @@ impl Ui {
         main.pack1(&**file_browser, false, false);
         main.pack2(&**shell, true, false);
 
-        window.add(&container);
+        window.add(&self.comps.borrow().fullscreen_headerbar_overlay);
 
         window.show_all();
 
@@ -408,7 +410,7 @@ impl Ui {
         }
     }
 
-    fn create_header_bar(&self, app: &gtk::Application, container_overlay: &gtk::Overlay) -> SubscriptionHandle { 
+    fn create_header_bar(&self, app: &gtk::Application) -> SubscriptionHandle { 
         // normal header
         let header_bar = HeaderBar::new();
         let comps = self.comps.borrow();
@@ -475,18 +477,28 @@ impl Ui {
             .fs_fullscreen_btn
             .connect_clicked(move |_| {
                 comps_ref.borrow().window.as_ref().unwrap().unfullscreen();
+                comps_ref.borrow().fullscreen_headerbar_overlay.reorder_overlay(&comps_ref.borrow().headerbar_revealer, 0);
                 comps_ref.borrow().headerbar_revealer.set_reveal_child(false);
             });
 
         let menu_button = self.create_primary_menu_btn(app, &window);
         comps.fullscreen_header_bar.pack_end(&menu_button);
         comps.headerbar_revealer.add(&comps.fullscreen_header_bar);
-        container_overlay.add_overlay(&comps.headerbar_revealer);
+        comps.fullscreen_headerbar_overlay.add_overlay(&comps.headerbar_revealer);
+        comps.fullscreen_headerbar_overlay.reorder_overlay(&comps.headerbar_revealer, 0);
         let comps_ref = self.comps.clone();
         window.connect_motion_notify_event(move |_, motion| {
             let (_, y) = motion.get_position();
             if (! menu_button.get_active()) && (! comps_ref.borrow().fs_open_btn.get_active()) {
-                comps_ref.borrow().headerbar_revealer.set_reveal_child(y <= 50.0 && comps_ref.borrow().window_state.is_fullscreen);
+                if y <= 6.0 && comps_ref.borrow().window_state.is_fullscreen { // TODO: for some reason the headerbar reveals early on the tabline/file explorer.
+                    comps_ref.borrow().fullscreen_headerbar_overlay.reorder_overlay(&comps_ref.borrow().headerbar_revealer, -1);
+                    comps_ref.borrow().headerbar_revealer.set_reveal_child(true);
+                } else { 
+                    if y >= 50.0 {
+                        comps_ref.borrow().fullscreen_headerbar_overlay.reorder_overlay(&comps_ref.borrow().headerbar_revealer, 0);
+                        comps_ref.borrow().headerbar_revealer.set_reveal_child(false);
+                    }
+                }
             }
             gtk::Inhibit(false)
         });
