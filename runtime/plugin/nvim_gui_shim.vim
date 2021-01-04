@@ -4,17 +4,23 @@ if !has('nvim') || exists('g:GuiLoaded')
 endif
 let g:GuiLoaded = 1
 
-if exists('g:GuiInternalClipboard')
-	let s:LastRegType = 'v'
-	function! provider#clipboard#Call(method, args) abort
-		if a:method == 'get'
-			return [rpcrequest(1, 'Gui', 'Clipboard', 'Get', a:args[0]), s:LastRegType]
-		elseif a:method == 'set'
-			let s:LastRegType = a:args[1]
-			call rpcnotify(1, 'Gui', 'Clipboard', 'Set', a:args[2], join(a:args[0], ''))
-		endif
-	endfunction
-endif
+function s:GuiClipboard()
+    let g:clipboard = {
+            \ 'name': 'gtk',
+            \ 'copy': {
+            \     '+': {lines, regtype -> rpcnotify(1, 'Gui', 'Clipboard', 'Set', '+', join(lines, "\n"))},
+            \     '*': {lines, regtype -> rpcnotify(1, 'Gui', 'Clipboard', 'Set', '*', join(lines, "\n"))},
+            \ },
+            \ 'paste': {
+            \     '+': { -> rpcrequest(1, 'Gui', 'Clipboard', 'Get', '+') },
+            \     '*': { -> rpcrequest(1, 'Gui', 'Clipboard', 'Get', '*') },
+            \ },
+            \ 'cache_enabled': 0,
+        \ }
+    " borrowed from neovim-qt
+    unlet! g:loaded_clipboard_provider
+    runtime autoload/provider/clipboard.vim
+endfunction
 
 " Set GUI font
 function! GuiFont(fname, ...) abort
@@ -57,6 +63,8 @@ command! -nargs=1 -bang GuiFont call s:GuiFontCommand("<args>", "<bang>")
 
 command! -nargs=? GuiFontFeatures call rpcnotify(1, 'Gui', 'FontFeatures', <q-args>)
 command! -nargs=1 GuiLinespace call rpcnotify(1, 'Gui', 'Linespace', <q-args>)
+
+command! NGClipboard call s:GuiClipboard()
 
 command! NGToggleSidebar call rpcnotify(1, 'Gui', 'Command', 'ToggleSidebar')
 command! NGShowProjectView call rpcnotify(1, 'Gui', 'Command', 'ShowProjectView')
