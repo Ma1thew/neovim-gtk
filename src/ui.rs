@@ -54,6 +54,7 @@ pub struct Ui {
     settings: Rc<RefCell<Settings>>,
     shell: Rc<RefCell<Shell>>,
     projects: Arc<UiMutex<Projects>>,
+    fs_projects: Arc<UiMutex<Projects>>,
     plug_manager: Arc<UiMutex<plug_manager::Manager>>,
     file_browser: Arc<UiMutex<FileBrowserWidget>>,
 }
@@ -61,13 +62,17 @@ pub struct Ui {
 pub struct Components {
     window: Option<ApplicationWindow>,
     window_state: WindowState,
-    open_btn: Button,
+    open_btn: gtk::MenuButton,
     fullscreen_btn: Button,
+    fs_fullscreen_btn: Button,
+    fs_open_btn: gtk::MenuButton,
+    headerbar_revealer: gtk::Revealer,
+    fullscreen_header_bar: HeaderBar,
 }
 
 impl Components {
     fn new() -> Components {
-        let open_btn = Button::new();
+        let open_btn = gtk::MenuButton::new();
         let open_btn_box = gtk::Box::new(gtk::Orientation::Horizontal, 3);
         open_btn_box.pack_start(&gtk::Label::new(Some("Open")), false, false, 3);
         open_btn_box.pack_start(
@@ -78,24 +83,41 @@ impl Components {
         );
         open_btn.add(&open_btn_box);
         open_btn.set_can_focus(false);
+
+        let fs_open_btn = gtk::MenuButton::new();
+        let fs_open_btn_box = gtk::Box::new(gtk::Orientation::Horizontal, 3);
+        fs_open_btn_box.pack_start(&gtk::Label::new(Some("Open")), false, false, 3);
+        fs_open_btn_box.pack_start(
+            &gtk::Image::new_from_icon_name(Some("pan-down-symbolic"), gtk::IconSize::Menu),
+            false,
+            false,
+            3,
+        );
+        fs_open_btn.add(&fs_open_btn_box);
+        fs_open_btn.set_can_focus(false);
         
         let fullscreen_btn = Button::new_from_icon_name(Some("view-fullscreen-symbolic"), gtk::IconSize::SmallToolbar.into());
         fullscreen_btn.set_can_focus(false);
         fullscreen_btn.set_tooltip_text(Some("Toggle fullscreen"));
+        let fs_fullscreen_btn = Button::new_from_icon_name(Some("view-restore-symbolic"), gtk::IconSize::SmallToolbar.into());
+        fs_fullscreen_btn.set_can_focus(false);
+        fs_fullscreen_btn.set_tooltip_text(Some("Toggle fullscreen"));
+        let headerbar_revealer = gtk::Revealer::new();
+        let fullscreen_header_bar = HeaderBar::new();
         Components {
             open_btn,
             fullscreen_btn,
+            fs_fullscreen_btn,
+            fs_open_btn,
             window: None,
             window_state: WindowState::load(),
+            headerbar_revealer,
+            fullscreen_header_bar,
         }
     }
 
     pub fn close_window(&self) {
         self.window.as_ref().unwrap().destroy();
-    }
-
-    pub fn toggle_fullscreen(&self) {
-        self.window.as_ref().unwrap().fullscreen();
     }
 
     pub fn window(&self) -> &ApplicationWindow {
@@ -115,6 +137,7 @@ impl Ui {
         settings.borrow_mut().set_shell(Rc::downgrade(&shell));
 
         let projects = Projects::new(&comps.borrow().open_btn, shell.clone());
+        let fs_projects = Projects::new(&comps.borrow().fs_open_btn, shell.clone());
 
         Ui {
             initialized: false,
@@ -122,6 +145,7 @@ impl Ui {
             shell,
             settings,
             projects,
+            fs_projects,
             plug_manager,
             file_browser,
             open_paths,
@@ -138,8 +162,10 @@ impl Ui {
         settings.init();
 
         let window = ApplicationWindow::new(app);
-
+        
+        let container = gtk::Overlay::new();
         let main = Paned::new(Orientation::Horizontal);
+        container.add(&main);
 
         {
             // initialize window from comps
@@ -169,8 +195,6 @@ impl Ui {
                     comps.window_state.current_width,
                     comps.window_state.current_height,
                 );
-
-                main.set_position(comps.window_state.sidebar_width);
             } else {
                 window.set_default_size(DEFAULT_WIDTH, DEFAULT_HEIGHT);
                 main.set_position(DEFAULT_SIDEBAR_WIDTH);
@@ -191,7 +215,7 @@ impl Ui {
         }
 
         let update_subtitle = if use_header_bar {
-            Some(self.create_header_bar(app))
+            Some(self.create_header_bar(app, &container))
         } else {
             None
         };
@@ -235,7 +259,7 @@ impl Ui {
         main.pack1(&**file_browser, false, false);
         main.pack2(&**shell, true, false);
 
-        window.add(&main);
+        window.add(&container);
 
         window.show_all();
 
@@ -377,7 +401,8 @@ impl Ui {
         }
     }
 
-    fn create_header_bar(&self, app: &gtk::Application) -> SubscriptionHandle {
+    fn create_header_bar(&self, app: &gtk::Application, container_overlay: &gtk::Overlay) -> SubscriptionHandle { 
+        // normal header
         let header_bar = HeaderBar::new();
         let comps = self.comps.borrow();
         let window = comps.window.as_ref().unwrap();
@@ -402,7 +427,9 @@ impl Ui {
         header_bar.pack_end(&comps.fullscreen_btn);
         comps
             .fullscreen_btn
-            .connect_clicked(move |_| comps_ref.borrow().toggle_fullscreen());
+            .connect_clicked(move |_| {
+                comps_ref.borrow().window.as_ref().unwrap().fullscreen();
+            });
 
         let paste_btn =
             Button::new_from_icon_name(Some("edit-paste-symbolic"), gtk::IconSize::SmallToolbar);
@@ -419,16 +446,75 @@ impl Ui {
         header_bar.pack_end(&save_btn);
 
         header_bar.set_show_close_button(true);
+        
+        // fullscreen headerbar
+        let projects = self.fs_projects.clone();
+        comps.fullscreen_header_bar.pack_start(&comps.fs_open_btn);
+        comps
+            .fs_open_btn
+            .connect_clicked(move |_| projects.borrow_mut().show());
 
+        let new_tab_btn =
+            Button::new_from_icon_name(Some("tab-new-symbolic"), gtk::IconSize::SmallToolbar);
+        let shell_ref = Rc::clone(&self.shell);
+        new_tab_btn.connect_clicked(move |_| shell_ref.borrow_mut().new_tab());
+        new_tab_btn.set_can_focus(false);
+        new_tab_btn.set_tooltip_text(Some("Open a new tab"));
+        comps.fullscreen_header_bar.pack_start(&new_tab_btn);
+        
+        let comps_ref = self.comps.clone();
+        comps.fullscreen_header_bar.pack_end(&comps.fs_fullscreen_btn);
+        comps
+            .fs_fullscreen_btn
+            .connect_clicked(move |_| {
+                comps_ref.borrow().window.as_ref().unwrap().unfullscreen();
+                comps_ref.borrow().headerbar_revealer.set_reveal_child(false);
+            });
+
+        let menu_button = self.create_primary_menu_btn(app, &window);
+        comps.fullscreen_header_bar.pack_end(&menu_button);
+        comps.headerbar_revealer.add(&comps.fullscreen_header_bar);
+        container_overlay.add_overlay(&comps.headerbar_revealer);
+        let comps_ref = self.comps.clone();
+        window.connect_motion_notify_event(move |_, motion| {
+            let (_, y) = motion.get_position();
+            if (! menu_button.get_active()) && (! comps_ref.borrow().fs_open_btn.get_active()) {
+                comps_ref.borrow().headerbar_revealer.set_reveal_child(y <= 50.0 && comps_ref.borrow().window_state.is_fullscreen);
+            }
+            gtk::Inhibit(false)
+        });
+
+        let paste_btn =
+            Button::new_from_icon_name(Some("edit-paste-symbolic"), gtk::IconSize::SmallToolbar);
+        let shell = self.shell.clone();
+        paste_btn.connect_clicked(move |_| shell.borrow_mut().edit_paste());
+        paste_btn.set_can_focus(false);
+        paste_btn.set_tooltip_text(Some("Paste from clipboard"));
+        comps.fullscreen_header_bar.pack_end(&paste_btn);
+
+        let save_btn = Button::new_with_label("Save All");
+        let shell = self.shell.clone();
+        save_btn.connect_clicked(move |_| shell.borrow_mut().edit_save_all());
+        save_btn.set_can_focus(false);
+        comps.fullscreen_header_bar.pack_end(&save_btn);
+
+        comps.fullscreen_header_bar.set_show_close_button(false);
+        comps.fullscreen_header_bar.set_valign(gtk::Align::Start);
+
+
+
+        // final config
         window.set_titlebar(Some(&header_bar));
 
         let shell = self.shell.borrow();
 
+        let comps_ref = self.comps.clone();
         let update_subtitle = shell.state.borrow().subscribe(
             SubscriptionKey::from("DirChanged"),
             &["getcwd()"],
             move |args| {
                 header_bar.set_subtitle(Some(&*args[0]));
+                comps_ref.borrow().fullscreen_header_bar.set_subtitle(Some(&*args[0]));
             },
         );
 
@@ -561,6 +647,7 @@ fn update_window_title(comps: &Arc<UiMutex<Components>>, args: Vec<String>) {
     };
 
     window.set_title(filename);
+    comps.fullscreen_header_bar.set_title(Some(filename));
 }
 
 #[derive(Serialize, Deserialize)]
