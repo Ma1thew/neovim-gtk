@@ -592,11 +592,13 @@ impl Ui {
 fn on_help_about(window: &gtk::ApplicationWindow) {
     let about = AboutDialog::new();
     about.set_transient_for(Some(window));
+    about.set_modal(true);
     about.set_program_name("NeovimGtk");
     about.set_version(Some(crate::GIT_BUILD_VERSION.unwrap_or(env!("CARGO_PKG_VERSION"))));
     about.set_logo_icon_name(Some("org.daa.NeovimGtk"));
     about.set_authors(&[env!("CARGO_PKG_AUTHORS")]);
     about.set_comments(Some(misc::about_comments().as_str()));
+    about.set_license(Some("This program comes with absolutely no warranty.\nSee the GNU General Public Licence, version 3 or later for details."));
 
     about.connect_response(|about, _| about.destroy());
     about.show();

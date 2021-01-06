@@ -73,7 +73,7 @@ pub fn decode_uri(uri: &str) -> Option<String> {
 /// info text
 pub fn about_comments() -> String {
     format!(
-        "Build on top of neovim\n\
+        "Built on top of neovim\n\
          Minimum supported neovim version: {}",
         shell::MINIMUM_SUPPORTED_NVIM_VERSION
     )
