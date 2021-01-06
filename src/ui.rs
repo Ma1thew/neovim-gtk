@@ -168,7 +168,7 @@ impl Ui {
         
         let main = Paned::new(Orientation::Horizontal);
         self.comps.borrow().fullscreen_headerbar_overlay.add_overlay(&main);
-        self.comps.borrow().fullscreen_headerbar_overlay.set_overlay_pass_through(&main, true);
+        //self.comps.borrow().fullscreen_headerbar_overlay.set_overlay_pass_through(&main, true);
 
         {
             // initialize window from comps

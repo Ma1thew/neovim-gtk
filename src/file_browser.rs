@@ -18,10 +18,13 @@ use crate::misc::escape_filename;
 use crate::nvim::{ErrorReport, NeovimClient, NeovimRef};
 use crate::shell;
 use crate::subscriptions::SubscriptionKey;
+use crate::icon_provider::get_icon;
 
 const ICON_FOLDER_CLOSED: &str = "folder-symbolic";
 const ICON_FOLDER_OPEN: &str = "folder-open-symbolic";
-const ICON_FILE: &str = "text-x-generic-symbolic";
+const ICON_SIZE: i32 = 16;
+
+//const ICON_FOLDER_CLOSED: Pixbuf =  Pixbuf::new_from_file("./resources/icons/android.svg").unwrap();
 
 struct Components {
     dir_list_model: gtk::TreeStore,
@@ -109,6 +112,7 @@ impl FileBrowserWidget {
     pub fn init(&mut self, shell_state: &shell::State) {
         // Initialize values.
         let nvim = shell_state.nvim_clone();
+        let icon_theme = gtk::IconTheme::get_default().unwrap();
         self.nvim = Some(nvim);
         if let Some(dir) = get_current_dir(&mut self.nvim().unwrap()) {
             update_dir_list(&dir, &self.comps.dir_list_model, &self.comps.dir_list);
@@ -121,7 +125,8 @@ impl FileBrowserWidget {
         let store = &self.store;
         let state_ref = &self.state;
         self.tree.connect_test_expand_row(clone!(store, state_ref => move |_, iter, _| {
-            store.set(&iter, &[Column::IconName as u32], &[&ICON_FOLDER_OPEN]);
+            let icon_theme = gtk::IconTheme::get_default().unwrap();
+            store.set(&iter, &[Column::IconName as u32], &[&icon_theme.load_icon(ICON_FOLDER_OPEN, ICON_SIZE, gtk::IconLookupFlags::empty()).unwrap()]);
             // We cannot recursively populate all directories. Instead, we have prepared a single
             // empty child entry for all non-empty directories, so the row will be expandable. Now,
             // when a directory is expanded, populate its children.
@@ -145,7 +150,7 @@ impl FileBrowserWidget {
                             .get_value(&iter, Column::FileType as i32)
                             .get::<u8>();
                         if file_type == Some(FileType::Dir as u8) {
-                            store.set(&iter, &[Column::IconName as u32], &[&ICON_FOLDER_CLOSED]);
+                            store.set(&iter, &[Column::IconName as u32], &[&icon_theme.load_icon(ICON_FOLDER_CLOSED, ICON_SIZE, gtk::IconLookupFlags::empty()).unwrap()]);
                         }
                     }
                 }
@@ -154,7 +159,7 @@ impl FileBrowserWidget {
         }));
 
         self.tree.connect_row_collapsed(clone!(store => move |_, iter, _| {
-            store.set(&iter, &[Column::IconName as u32], &[&ICON_FOLDER_CLOSED]);
+            store.set(&iter, &[Column::IconName as u32], &[&icon_theme.load_icon(ICON_FOLDER_CLOSED, ICON_SIZE, gtk::IconLookupFlags::empty()).unwrap()]);
         }));
 
         // Further initialization.
@@ -372,6 +377,7 @@ fn update_dir_list(dir: &str, dir_list_model: &gtk::TreeStore, dir_list: &gtk::C
     let mut path = PathBuf::new();
     let mut components = complete_path.components();
     let mut next = components.next();
+    let icon_theme = gtk::IconTheme::get_default().unwrap();
 
     // Iterator over existing dir_list model.
     let mut dir_list_iter = dir_list_model.get_iter_first();
@@ -406,7 +412,7 @@ fn update_dir_list(dir: &str, dir_list_model: &gtk::TreeStore, dir_list: &gtk::C
             dir_list_model.set(
                 &current_iter,
                 &[0, 1, 2],
-                &[&dir_name, &ICON_FOLDER_CLOSED, &path_str],
+                &[&dir_name, &icon_theme.load_icon(ICON_FOLDER_CLOSED, ICON_SIZE, gtk::IconLookupFlags::empty()).unwrap(), &path_str],
             );
         } else {
             // We reached the last component of the new cwd path. Set the active entry of dir_list
@@ -414,7 +420,7 @@ fn update_dir_list(dir: &str, dir_list_model: &gtk::TreeStore, dir_list: &gtk::C
             dir_list_model.set(
                 &current_iter,
                 &[0, 1, 2],
-                &[&dir_name, &ICON_FOLDER_OPEN, &path_str],
+                &[&dir_name, &icon_theme.load_icon(ICON_FOLDER_OPEN, ICON_SIZE, gtk::IconLookupFlags::empty()).unwrap(), &path_str],
             );
             dir_list.set_active_iter(Some(&current_iter));
         };
@@ -431,7 +437,7 @@ fn update_dir_list(dir: &str, dir_list_model: &gtk::TreeStore, dir_list: &gtk::C
             // If we didn't change any entries to this point and the list contains further entries,
             // the remaining ones are subdirectories of the cwd and we keep them.
             loop {
-                dir_list_model.set(&iter, &[1], &[&ICON_FOLDER_CLOSED]);
+                dir_list_model.set(&iter, &[1], &[&icon_theme.load_icon(ICON_FOLDER_CLOSED, ICON_SIZE, gtk::IconLookupFlags::empty()).unwrap()]);
                 if !dir_list_model.iter_next(&iter) {
                     break;
                 }
@@ -451,6 +457,7 @@ fn populate_tree_nodes(
     dir: &str,
     parent: Option<&gtk::TreeIter>,
 ) {
+    let icon_theme = gtk::IconTheme::get_default().unwrap();
     let path = Path::new(dir);
     let read_dir = match path.read_dir() {
         Ok(read_dir) => read_dir,
@@ -489,9 +496,13 @@ fn populate_tree_nodes(
             // In case of invalid symlinks, we cannot obtain metadata.
             continue;
         };
+        // this is a bit of a mess. see https://github.com/kyazdani42/nvim-web-devicons/blob/master/lua/nvim-web-devicons.lua
         let icon = match file_type {
-            FileType::Dir => ICON_FOLDER_CLOSED,
-            FileType::File => ICON_FILE,
+            FileType::Dir => icon_theme.load_icon(ICON_FOLDER_CLOSED, ICON_SIZE, gtk::IconLookupFlags::empty()).unwrap().unwrap(),
+            FileType::File => {
+                let file_name = path.split("/").last().unwrap().trim();
+                get_icon(vec![file_name, file_name.split(".").last().unwrap()])
+            },
         };
         // When we get until here, we want to show the entry. Append it to the tree.
         let iter = store.append(parent);
