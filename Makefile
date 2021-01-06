@@ -15,6 +15,7 @@ install-debug: install-resources
 install-resources:
 	mkdir -p $(DESTDIR)$(PREFIX)/share/nvim-gtk/
 	cp -r runtime $(DESTDIR)$(PREFIX)/share/nvim-gtk/
+	cp -r resources/icons $(DESTDIR)$(PREFIX)/share/nvim-gtk/
 	mkdir -p $(DESTDIR)$(PREFIX)/share/applications/
 	sed -e "s|Exec=nvim-gtk|Exec=$(PREFIX)/bin/nvim-gtk|" \
 		desktop/org.daa.NeovimGtk.desktop \
