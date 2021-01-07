@@ -11,6 +11,7 @@ use gio;
 use gio::prelude::*;
 use gtk;
 use gtk::prelude::*;
+use gtk::SettingsExt;
 
 use neovim_lib::{NeovimApi, NeovimApiAsync};
 
@@ -114,6 +115,15 @@ impl FileBrowserWidget {
 
         // Populate tree.
         tree_reload(&self.store, &self.state.borrow());
+
+        let store = &self.store;
+        let state = &self.state;
+        let dir_list_model = &self.comps.dir_list_model;
+        let dir_list = &self.comps.dir_list;
+        gtk::Settings::get_default().unwrap().connect_property_gtk_theme_name_notify(clone!(store, state, dir_list_model, dir_list => move |_| {
+            tree_reload(&store, &state.borrow());
+            update_dir_list(&state.borrow_mut().current_dir, &dir_list_model, &dir_list);
+        }));
 
         let store = &self.store;
         let state_ref = &self.state;
