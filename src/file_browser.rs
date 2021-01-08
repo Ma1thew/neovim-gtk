@@ -496,7 +496,6 @@ fn populate_tree_nodes(
             // In case of invalid symlinks, we cannot obtain metadata.
             continue;
         };
-        // this is a bit of a mess. see https://github.com/kyazdani42/nvim-web-devicons/blob/master/lua/nvim-web-devicons.lua
         let icon = match file_type {
             FileType::Dir => get_folder_closed(),
             FileType::File => {
