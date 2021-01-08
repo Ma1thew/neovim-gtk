@@ -198,6 +198,9 @@ impl Ui {
                     comps.window_state.current_width,
                     comps.window_state.current_height,
                 );
+
+                main.set_position(comps.window_state.sidebar_width);
+
             } else {
                 window.set_default_size(DEFAULT_WIDTH, DEFAULT_HEIGHT);
                 main.set_position(DEFAULT_SIDEBAR_WIDTH);
