@@ -481,30 +481,41 @@ impl Ui {
             .fs_fullscreen_btn
             .connect_clicked(move |_| {
                 comps_ref.borrow().window.as_ref().unwrap().unfullscreen();
-                comps_ref.borrow().fullscreen_headerbar_overlay.reorder_overlay(&comps_ref.borrow().headerbar_revealer, 0);
                 comps_ref.borrow().headerbar_revealer.set_reveal_child(false);
             });
 
         let menu_button = self.create_primary_menu_btn(app, &window);
         comps.fullscreen_header_bar.pack_end(&menu_button);
         comps.headerbar_revealer.add(&comps.fullscreen_header_bar);
-        comps.fullscreen_headerbar_overlay.add_overlay(&comps.headerbar_revealer);
-        comps.fullscreen_headerbar_overlay.reorder_overlay(&comps.headerbar_revealer, 0);
+        let overlay_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
+        overlay_box.pack_start(&comps.headerbar_revealer, false, true, 0);
+        comps.fullscreen_headerbar_overlay.add_overlay(&overlay_box);
+        comps.fullscreen_headerbar_overlay.reorder_overlay(&overlay_box, 0);
         let comps_ref = self.comps.clone();
+        let overlay_box_ref = overlay_box.clone();
         window.connect_motion_notify_event(move |_, motion| {
             let (_, y) = motion.get_position();
             if (! menu_button.get_active()) && (! comps_ref.borrow().fs_open_btn.get_active()) {
-                if y <= 6.0 && comps_ref.borrow().window_state.is_fullscreen { // TODO: for some reason the headerbar reveals early on the tabline/file explorer.
-                    comps_ref.borrow().fullscreen_headerbar_overlay.reorder_overlay(&comps_ref.borrow().headerbar_revealer, -1);
+                if y <= 2.0 && comps_ref.borrow().window_state.is_fullscreen { // TODO: for some reason the headerbar reveals early on the tabline/file explorer.
+                    comps_ref.borrow().fullscreen_headerbar_overlay.reorder_overlay(&overlay_box_ref, -1);
                     comps_ref.borrow().headerbar_revealer.set_reveal_child(true);
                 } else { 
-                    if y >= 50.0 {
-                        comps_ref.borrow().fullscreen_headerbar_overlay.reorder_overlay(&comps_ref.borrow().headerbar_revealer, 0);
+                    if y >= 50.0 && comps_ref.borrow().headerbar_revealer.get_reveal_child() {
                         comps_ref.borrow().headerbar_revealer.set_reveal_child(false);
+                        //std::thread::sleep(std::time::Duration::from_millis(comps_ref.borrow().headerbar_revealer.get_transition_duration().into()));
+                        //std::thread::sleep(std::time::Duration::from_millis(1000));
+                        //comps_ref.borrow().fullscreen_headerbar_overlay.reorder_overlay(&overlay_box, 0);
                     }
                 }
             }
             gtk::Inhibit(false)
+        });
+
+        let comps_ref = self.comps.clone();
+        comps.headerbar_revealer.connect_property_child_revealed_notify( move |s| {
+            if ! s.get_reveal_child() {
+                comps_ref.borrow().fullscreen_headerbar_overlay.reorder_overlay(&overlay_box, 0);
+            }
         });
 
         let paste_btn =
