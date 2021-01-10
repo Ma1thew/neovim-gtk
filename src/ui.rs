@@ -502,9 +502,6 @@ impl Ui {
                 } else { 
                     if y >= 50.0 && comps_ref.borrow().headerbar_revealer.get_reveal_child() {
                         comps_ref.borrow().headerbar_revealer.set_reveal_child(false);
-                        //std::thread::sleep(std::time::Duration::from_millis(comps_ref.borrow().headerbar_revealer.get_transition_duration().into()));
-                        //std::thread::sleep(std::time::Duration::from_millis(1000));
-                        //comps_ref.borrow().fullscreen_headerbar_overlay.reorder_overlay(&overlay_box, 0);
                     }
                 }
             }
