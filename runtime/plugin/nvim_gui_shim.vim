@@ -76,3 +76,5 @@ command! -nargs=1 NGSetCursorBlink call rpcnotify(1, 'Gui', 'Command', 'SetCurso
 command! NGToggleFullscreen call rpcnotify(1, 'Gui', 'Command', 'ToggleFullscreen')
 command! NGFullscreen call rpcnotify(1, 'Gui', 'Command', 'Fullscreen')
 command! NGUnfullscreen call rpcnotify(1, 'Gui', 'Command', 'Unfullscreen')
+command! NGHideExtTabline call rpcnotify(1, 'Gui', 'Command', 'HideExtTabline')
+command! NGUnhideExtTabline call rpcnotify(1, 'Gui', 'Command', 'UnhideExtTabline')

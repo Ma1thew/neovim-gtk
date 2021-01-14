@@ -202,6 +202,8 @@ pub fn call_gui_event(
                 "ToggleFullscreen" => ui.on_command(NvimCommand::ToggleFullscreen),
                 "Fullscreen" => ui.on_command(NvimCommand::Fullscreen),
                 "Unfullscreen" => ui.on_command(NvimCommand::Unfullscreen),
+                "HideExtTabline" => ui.tabline_hide(),
+                "UnhideExtTabline" => ui.tabline_show(),
                 _ => error!("Unknown command"),
             };
         }

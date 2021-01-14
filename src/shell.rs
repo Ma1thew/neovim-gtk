@@ -1499,6 +1499,14 @@ impl State {
         RepaintMode::Nothing
     }
 
+    pub fn tabline_hide(&self) {
+        self.tabs.hide();
+    }
+
+    pub fn tabline_show(&self) {
+        self.tabs.show();
+    }
+
     pub fn option_set(&mut self, name: String, val: Value) -> RepaintMode {
         if let "guifont" = name.as_str() { self.set_font_from_value(val) };
         RepaintMode::Nothing

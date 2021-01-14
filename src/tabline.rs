@@ -20,6 +20,7 @@ struct State {
     data: Vec<Tabpage>,
     selected: Option<Tabpage>,
     nvim: Option<Rc<nvim::NeovimClient>>,
+    is_hidden: bool,
 }
 
 impl State {
@@ -28,6 +29,7 @@ impl State {
             data: Vec::new(),
             selected: None,
             nvim: None,
+            is_hidden: false,
         }
     }
 
@@ -106,7 +108,9 @@ impl Tabline {
             self.tabs.hide();
             return;
         } else {
-            self.tabs.show();
+            if ! self.state.borrow().is_hidden {
+                self.tabs.show();
+            }
         }
 
         self.update_state(nvim, selected, tabs);
@@ -178,6 +182,16 @@ impl Tabline {
         }
 
         signal::signal_handler_unblock(&self.tabs, &self.switch_handler_id);
+    }
+
+    pub fn hide(&self) {
+        self.state.borrow_mut().is_hidden = true;
+        self.tabs.hide();
+    }
+
+    pub fn show(&self) {
+        self.state.borrow_mut().is_hidden = false;
+        self.tabs.show();
     }
 }
 
