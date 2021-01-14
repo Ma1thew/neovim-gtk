@@ -11,6 +11,7 @@ use glib::variant::FromVariant;
 use gtk;
 use gtk::prelude::*;
 use gtk::{AboutDialog, ApplicationWindow, Button, HeaderBar, Orientation, Paned, SettingsExt};
+use gdk::WindowExt;
 
 use toml;
 
@@ -493,15 +494,21 @@ impl Ui {
         comps.fullscreen_headerbar_overlay.reorder_overlay(&overlay_box, 0);
         let comps_ref = self.comps.clone();
         let overlay_box_ref = overlay_box.clone();
-        window.connect_motion_notify_event(move |_, motion| {
-            let (_, y) = motion.get_position();
-            if (! menu_button.get_active()) && (! comps_ref.borrow().fs_open_btn.get_active()) {
-                if y <= 2.0 && comps_ref.borrow().window_state.is_fullscreen { // TODO: for some reason the headerbar reveals early on the tabline/file explorer.
-                    comps_ref.borrow().fullscreen_headerbar_overlay.reorder_overlay(&overlay_box_ref, -1);
-                    comps_ref.borrow().headerbar_revealer.set_reveal_child(true);
-                } else { 
-                    if y >= 50.0 && comps_ref.borrow().headerbar_revealer.get_reveal_child() {
-                        comps_ref.borrow().headerbar_revealer.set_reveal_child(false);
+        window.connect_motion_notify_event(move |win, _| {
+            if let Some(disp) = gdk::Display::get_default() {
+                if let Some(seat) = disp.get_default_seat() {
+                    if let Some(ptr) = seat.get_pointer() {
+                        let (_, _, y, _) = win.get_window().unwrap().get_device_position(&ptr);
+                        if (! menu_button.get_active()) && (! comps_ref.borrow().fs_open_btn.get_active()) {
+                            if y <= 4 && comps_ref.borrow().window_state.is_fullscreen { 
+                                comps_ref.borrow().fullscreen_headerbar_overlay.reorder_overlay(&overlay_box_ref, -1);
+                                comps_ref.borrow().headerbar_revealer.set_reveal_child(true);
+                            } else { 
+                                if y >= 50 && comps_ref.borrow().headerbar_revealer.get_reveal_child() {
+                                    comps_ref.borrow().headerbar_revealer.set_reveal_child(false);
+                                }
+                            }
+                        }
                     }
                 }
             }
