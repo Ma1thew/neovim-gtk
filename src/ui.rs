@@ -408,9 +408,17 @@ impl Ui {
             NvimCommand::ToggleFullscreen => {
                 if comps.borrow().window_state.is_fullscreen {
                     comps.borrow().window.as_ref().unwrap().unfullscreen();
+                    comps.borrow().headerbar_revealer.set_reveal_child(false);
                 } else {
                     comps.borrow().window.as_ref().unwrap().fullscreen();
                 }
+            }
+            NvimCommand::Fullscreen => {
+                comps.borrow().window.as_ref().unwrap().fullscreen();
+            }
+            NvimCommand::Unfullscreen => {
+                comps.borrow().window.as_ref().unwrap().unfullscreen();
+                comps.borrow().headerbar_revealer.set_reveal_child(false);
             }
         }
     }

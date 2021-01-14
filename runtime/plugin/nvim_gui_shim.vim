@@ -72,4 +72,5 @@ command! -nargs=+ NGTransparency call rpcnotify(1, 'Gui', 'Command', 'Transparen
 command! -nargs=1 NGPreferDarkTheme call rpcnotify(1, 'Gui', 'Command', 'PreferDarkTheme', <q-args>)
 command! -nargs=1 NGSetCursorBlink call rpcnotify(1, 'Gui', 'Command', 'SetCursorBlink', <q-args>)
 command! NGToggleFullscreen call rpcnotify(1, 'Gui', 'Command', 'ToggleFullscreen')
-
+command! NGFullscreen call rpcnotify(1, 'Gui', 'Command', 'Fullscreen')
+command! NGUnfullscreen call rpcnotify(1, 'Gui', 'Command', 'Unfullscreen')
