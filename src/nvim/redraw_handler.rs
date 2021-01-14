@@ -114,6 +114,8 @@ macro_rules! call {
 
 pub enum NvimCommand {
     ToggleSidebar,
+    OpenSidebar,
+    CloseSidebar,
     ShowProjectView,
     Transparency(f64, f64),
     PreferDarkTheme(bool),
@@ -167,6 +169,8 @@ pub fn call_gui_event(
         "Command" => {
             match try_str!(args[0]) {
                 "ToggleSidebar" => ui.on_command(NvimCommand::ToggleSidebar),
+                "OpenSidebar" => ui.on_command(NvimCommand::OpenSidebar),
+                "CloseSidebar" => ui.on_command(NvimCommand::CloseSidebar),
                 "ShowProjectView" => ui.on_command(NvimCommand::ShowProjectView),
                 "Transparency" => ui.on_command(NvimCommand::Transparency(
                     try_str!(args.get(1).cloned().unwrap_or_else(|| "1.0".into()))

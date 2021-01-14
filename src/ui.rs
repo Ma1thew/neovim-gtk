@@ -385,6 +385,12 @@ impl Ui {
                 let state = !bool::from_variant(&action.get_state().unwrap()).unwrap();
                 action.change_state(&state.to_variant());
             }
+            NvimCommand::OpenSidebar => {
+                sidebar_action.borrow().change_state(&true.to_variant());
+            }
+            NvimCommand::CloseSidebar => {
+                sidebar_action.borrow().change_state(&false.to_variant());
+            }
             NvimCommand::Transparency(background_alpha, filled_alpha) => {
                 let comps = comps.borrow();
                 let window = comps.window.as_ref().unwrap();

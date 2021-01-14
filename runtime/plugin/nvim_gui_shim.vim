@@ -67,6 +67,8 @@ command! -nargs=1 GuiLinespace call rpcnotify(1, 'Gui', 'Linespace', <q-args>)
 command! NGClipboard call s:GuiClipboard()
 
 command! NGToggleSidebar call rpcnotify(1, 'Gui', 'Command', 'ToggleSidebar')
+command! NGOpenSidebar call rpcnotify(1, 'Gui', 'Command', 'OpenSidebar')
+command! NGCloseSidebar call rpcnotify(1, 'Gui', 'Command', 'CloseSidebar')
 command! NGShowProjectView call rpcnotify(1, 'Gui', 'Command', 'ShowProjectView')
 command! -nargs=+ NGTransparency call rpcnotify(1, 'Gui', 'Command', 'Transparency', <f-args>)
 command! -nargs=1 NGPreferDarkTheme call rpcnotify(1, 'Gui', 'Command', 'PreferDarkTheme', <q-args>)
