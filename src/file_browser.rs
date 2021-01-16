@@ -247,9 +247,8 @@ impl FileBrowserWidget {
         shell_state.run_now(&subscription);
 
         let buf_list = &self.comps.buf_list;
-        let buf_tree = &self.comps.buf_tree_view;
         let nvim_ref = self.nvim.as_ref().unwrap();
-        let subscription = shell_state.subscribe(SubscriptionKey::from("BufAdd,BufDelete,BufFilePost"), &[], clone!(buf_list, buf_tree, nvim_ref => move |args| {
+        shell_state.subscribe(SubscriptionKey::from("BufAdd,BufDelete,BufFilePost"), &[], clone!(buf_list, nvim_ref => move |_| {
             let mut nvim = nvim_ref.nvim().unwrap();
             let buffers = nvim.list_bufs().unwrap();
             buf_list.clear();
@@ -274,6 +273,25 @@ impl FileBrowserWidget {
                 );
             }
         }));
+
+        let buf_tree = &self.comps.buf_tree_view;
+        let buf_list = &self.comps.buf_list;
+        shell_state.subscribe(SubscriptionKey::from("BufEnter"), &["bufnr('%')"], clone!(buf_tree, buf_list => move |args| {
+            if let Some(buf_num) = args.into_iter().next() {
+                if let Ok(num) = buf_num.parse::<u32>() {
+                    let mut tree_path = gtk::TreePath::new();
+                    tree_path.down();
+                    while let Some(iter) = buf_list.get_iter(&tree_path) {
+                        if num == buf_list.get_value(&iter, 0).get::<u32>().unwrap() { // update 0 if columns change
+                            buf_tree.set_cursor(&tree_path, Option::<&gtk::TreeViewColumn>::None, false);
+                            break;
+                        }
+                        tree_path.next();
+                    }
+                }
+            }
+        }));
+
         // TODO: on BufModifiedSet
     }
 
