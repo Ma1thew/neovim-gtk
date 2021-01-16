@@ -256,8 +256,10 @@ impl FileBrowserWidget {
             for buf in buffers {
                 let buf_id = buf.get_number(&mut nvim).unwrap();
                 let mut name = buf.get_name(&mut nvim).unwrap();
-                if name == "" && buf.line_count(&mut nvim).unwrap() == 0 {
-                    continue;
+                if let Ok(neovim_lib::Value::Boolean(is_listed)) = buf.get_option(&mut nvim, "buflisted") {
+                    if ! is_listed {
+                        continue;
+                    }
                 }
                 let iter = buf_list.append(None);
                 if name == "" {
