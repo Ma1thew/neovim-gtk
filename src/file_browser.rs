@@ -293,7 +293,7 @@ impl FileBrowserWidget {
 
         let buf_tree = &self.comps.buf_tree_view;
         let buf_list = &self.comps.buf_list;
-        shell_state.subscribe(SubscriptionKey::from("BufEnter"), &["bufnr('%')"], clone!(buf_tree, buf_list => move |args| {
+        shell_state.subscribe(SubscriptionKey::from("BufEnter,BufDelete"), &["bufnr('%')"], clone!(buf_tree, buf_list => move |args| {
             if let Some(buf_num) = args.into_iter().next() {
                 if let Ok(num) = buf_num.parse::<u32>() {
                     let mut tree_path = gtk::TreePath::new();
