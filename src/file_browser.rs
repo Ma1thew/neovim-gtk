@@ -24,6 +24,8 @@ use crate::icon_provider::{get_icon, get_folder_open, get_folder_closed};
 struct Components {
     dir_list_model: gtk::TreeStore,
     dir_list: gtk::ComboBox,
+    buf_list: gtk::TreeStore,
+    buf_tree_view: gtk::TreeView,
     context_menu: gtk::Menu,
     show_hidden_checkbox: gtk::CheckMenuItem,
     cd_action: gio::SimpleAction,
@@ -75,6 +77,8 @@ impl FileBrowserWidget {
         let dir_list_model: gtk::TreeStore = builder.get_object("dir_list_model").unwrap();
         let dir_list: gtk::ComboBox = builder.get_object("dir_list").unwrap();
         let context_menu: gtk::Menu = builder.get_object("file_browser_context_menu").unwrap();
+        let buf_list: gtk::TreeStore = builder.get_object("buf_list").unwrap();
+        let buf_tree_view: gtk::TreeView = builder.get_object("buf_tree_view").unwrap();
         let show_hidden_checkbox: gtk::CheckMenuItem = builder
             .get_object("file_browser_show_hidden_checkbox")
             .unwrap();
@@ -87,6 +91,8 @@ impl FileBrowserWidget {
             comps: Components {
                 dir_list_model,
                 dir_list,
+                buf_list,
+                buf_tree_view,
                 context_menu,
                 show_hidden_checkbox,
                 cd_action: gio::SimpleAction::new("cd", None),
@@ -239,6 +245,34 @@ impl FileBrowserWidget {
             }),
         );
         shell_state.run_now(&subscription);
+
+        let buf_list = &self.comps.buf_list;
+        let buf_tree = &self.comps.buf_tree_view;
+        let nvim_ref = self.nvim.as_ref().unwrap();
+        let subscription = shell_state.subscribe(SubscriptionKey::from("BufAdd,BufDelete,BufFilePost"), &[], clone!(buf_list, buf_tree, nvim_ref => move |args| {
+            let mut nvim = nvim_ref.nvim().unwrap();
+            let buffers = nvim.list_bufs().unwrap();
+            buf_list.clear();
+            for buf in buffers {
+                let buf_id = buf.get_number(&mut nvim).unwrap();
+                let mut name = buf.get_name(&mut nvim).unwrap();
+                if name == "" && buf.line_count(&mut nvim).unwrap() == 0 {
+                    continue;
+                }
+                let iter = buf_list.append(None);
+                if name == "" {
+                    name = String::from("[No Name]");
+                } else {
+                    name = name.split("/").last().unwrap().to_string();
+                }
+                buf_list.set(
+                    &iter,
+                    &[0, 1],
+                    &[&buf_id, &name],
+                );
+            }
+        }));
+        // TODO: on BufModifiedSet
     }
 
     fn connect_events(&self) {
