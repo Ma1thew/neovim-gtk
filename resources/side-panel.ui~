@@ -77,7 +77,6 @@
         <property name="label" translatable="yes">Open Buffers</property>
         <property name="xalign">0.05000000074505806</property>
         <attributes>
-          <attribute name="weight" value="bold"/>
           <attribute name="scale" value="0.90000000000000002"/>
           <attribute name="foreground" value="#88888a8a8585"/>
         </attributes>
@@ -133,7 +132,6 @@
         <property name="label" translatable="yes">File Tree</property>
         <property name="xalign">0.05000000074505806</property>
         <attributes>
-          <attribute name="weight" value="bold"/>
           <attribute name="scale" value="0.90000000000000002"/>
           <attribute name="foreground" value="#88888a8a8585"/>
         </attributes>
