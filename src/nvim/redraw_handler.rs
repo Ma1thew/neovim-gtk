@@ -122,6 +122,9 @@ pub enum NvimCommand {
     ToggleFullscreen,
     Fullscreen,
     Unfullscreen,
+    SidebarShowLines,
+    SidebarHideLines,
+    SidebarToggleLines,
 }
 
 pub fn call_gui_event(
@@ -204,6 +207,9 @@ pub fn call_gui_event(
                 "Unfullscreen" => ui.on_command(NvimCommand::Unfullscreen),
                 "HideExtTabline" => ui.tabline_hide(),
                 "UnhideExtTabline" => ui.tabline_show(),
+                "SidebarShowLines" => ui.on_command(NvimCommand::SidebarShowLines),
+                "SidebarHideLines" => ui.on_command(NvimCommand::SidebarHideLines),
+                "SidebarToggleLines" => ui.on_command(NvimCommand::SidebarToggleLines),
                 _ => error!("Unknown command"),
             };
         }

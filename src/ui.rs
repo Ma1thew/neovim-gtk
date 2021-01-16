@@ -326,9 +326,10 @@ impl Ui {
         let sidebar_action = UiMutex::new(show_sidebar_action);
         let comps_ref = self.comps.clone();
         let projects = self.projects.clone();
+        let file_browser = self.file_browser.clone();
         shell.set_nvim_command_cb(Some(
             move |shell: &mut shell::State, command: NvimCommand| {
-                Ui::nvim_command(shell, command, &sidebar_action, &projects, &comps_ref);
+                Ui::nvim_command(shell, command, &sidebar_action, &projects, &comps_ref, &file_browser);
             },
         ));
     }
@@ -372,6 +373,7 @@ impl Ui {
         sidebar_action: &UiMutex<SimpleAction>,
         projects: &Arc<UiMutex<Projects>>,
         comps: &UiMutex<Components>,
+        sidebar: &UiMutex<FileBrowserWidget>
     ) {
         match command {
             NvimCommand::ShowProjectView => {
@@ -425,6 +427,12 @@ impl Ui {
             NvimCommand::Unfullscreen => {
                 comps.borrow().window.as_ref().unwrap().unfullscreen();
                 comps.borrow().headerbar_revealer.set_reveal_child(false);
+            }
+            NvimCommand::SidebarShowLines => sidebar.borrow().set_enable_tree_lines(true),
+            NvimCommand::SidebarHideLines => sidebar.borrow().set_enable_tree_lines(false),
+            NvimCommand::SidebarToggleLines => { 
+                let sidebar = sidebar.borrow();
+                sidebar.set_enable_tree_lines(! sidebar.get_enable_tree_lines());
             }
         }
     }

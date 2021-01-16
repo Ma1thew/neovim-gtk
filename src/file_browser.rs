@@ -262,7 +262,7 @@ impl FileBrowserWidget {
 
         let buf_list = &self.comps.buf_list;
         let nvim_ref = self.nvim.as_ref().unwrap();
-        let update_list_sub = shell_state.subscribe(SubscriptionKey::from("BufAdd,BufDelete,BufFilePost"), &[], clone!(buf_list, nvim_ref => move |_| {
+        shell_state.subscribe(SubscriptionKey::from("BufAdd,BufDelete,BufFilePost"), &[], clone!(buf_list, nvim_ref => move |_| {
             let mut nvim = nvim_ref.nvim().unwrap();
             let buffers = nvim.list_bufs().unwrap();
             buf_list.clear();
@@ -293,7 +293,7 @@ impl FileBrowserWidget {
 
         let buf_tree = &self.comps.buf_tree_view;
         let buf_list = &self.comps.buf_list;
-        let update_select_sub = shell_state.subscribe(SubscriptionKey::from("BufEnter"), &["bufnr('%')"], clone!(buf_tree, buf_list => move |args| {
+        shell_state.subscribe(SubscriptionKey::from("BufEnter"), &["bufnr('%')"], clone!(buf_tree, buf_list => move |args| {
             if let Some(buf_num) = args.into_iter().next() {
                 if let Ok(num) = buf_num.parse::<u32>() {
                     let mut tree_path = gtk::TreePath::new();
@@ -452,6 +452,14 @@ impl FileBrowserWidget {
             state.show_hidden = ev.get_active();
             tree_reload(&store, &state);
         }));
+    }
+
+    pub fn set_enable_tree_lines(&self, setting: bool) {
+        self.tree.set_enable_tree_lines(setting);
+    }
+
+    pub fn get_enable_tree_lines(&self) -> bool {
+        self.tree.get_enable_tree_lines()
     }
 }
 
