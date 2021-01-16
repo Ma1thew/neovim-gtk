@@ -170,6 +170,20 @@ impl FileBrowserWidget {
             store.set(&iter, &[Column::IconName as u32], &[&get_folder_closed()]);
         }));
 
+
+        let nvim_ref = self.nvim.as_ref().unwrap();
+        let buf_list = &self.comps.buf_list;
+        self.comps.buf_tree_view.connect_row_activated(clone!(nvim_ref, buf_list => move |_, path, _| {
+            let buf_num = buf_list.get_value(&buf_list.get_iter(path).unwrap(), 0).get::<u32>().unwrap();
+            let mut nvim = nvim_ref.nvim().unwrap();
+            for buf in nvim.list_bufs().unwrap() {
+                if buf.get_number(&mut nvim).unwrap() as u32 == buf_num {
+                    nvim.set_current_buf(&buf).unwrap();
+                    break;
+                }
+            }
+        }));
+
         // Further initialization.
         self.init_actions();
         self.init_subscriptions(shell_state);
