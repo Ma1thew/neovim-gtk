@@ -262,7 +262,7 @@ impl FileBrowserWidget {
 
         let buf_list = &self.comps.buf_list;
         let nvim_ref = self.nvim.as_ref().unwrap();
-        shell_state.subscribe(SubscriptionKey::from("BufAdd,BufDelete,BufFilePost"), &[], clone!(buf_list, nvim_ref => move |_| {
+        let update_list_sub = shell_state.subscribe(SubscriptionKey::from("BufAdd,BufDelete,BufFilePost"), &[], clone!(buf_list, nvim_ref => move |_| {
             let mut nvim = nvim_ref.nvim().unwrap();
             let buffers = nvim.list_bufs().unwrap();
             buf_list.clear();
@@ -293,7 +293,7 @@ impl FileBrowserWidget {
 
         let buf_tree = &self.comps.buf_tree_view;
         let buf_list = &self.comps.buf_list;
-        shell_state.subscribe(SubscriptionKey::from("BufEnter"), &["bufnr('%')"], clone!(buf_tree, buf_list => move |args| {
+        let update_select_sub = shell_state.subscribe(SubscriptionKey::from("BufEnter"), &["bufnr('%')"], clone!(buf_tree, buf_list => move |args| {
             if let Some(buf_num) = args.into_iter().next() {
                 if let Ok(num) = buf_num.parse::<u32>() {
                     let mut tree_path = gtk::TreePath::new();
@@ -307,6 +307,49 @@ impl FileBrowserWidget {
                     }
                 }
             }
+        }));
+
+        let buf_tree = &self.comps.buf_tree_view;
+        let buf_list = &self.comps.buf_list;
+        let nvim_ref = self.nvim.as_ref().unwrap();
+        gtk::Settings::get_default().unwrap().connect_property_gtk_theme_name_notify(clone!(buf_tree, buf_list, nvim_ref => move |_| {
+            let mut nvim = nvim_ref.nvim().unwrap();
+            let buffers = nvim.list_bufs().unwrap();
+            let (selected_buf, _) = buf_tree.get_cursor();
+            let selected_buf = buf_list.get_value(&buf_list.get_iter(&selected_buf.unwrap()).unwrap(), 1).get::<u32>().unwrap();
+            buf_list.clear();
+            for buf in buffers {
+                let buf_id = buf.get_number(&mut nvim).unwrap();
+                let mut name = buf.get_name(&mut nvim).unwrap();
+                if let Ok(neovim_lib::Value::Boolean(is_listed)) = buf.get_option(&mut nvim, "buflisted") {
+                    if ! is_listed {
+                        continue;
+                    }
+                }
+                let iter = buf_list.append(None);
+                let icon: gdk_pixbuf::Pixbuf;
+                if name == "" {
+                    name = String::from("[No Name]");
+                    icon = get_icon(vec![]);
+                } else {
+                    name = name.split("/").last().unwrap().to_string();
+                    icon = get_icon(vec![&name[..], name.split(".").last().unwrap()]);
+                }
+                buf_list.set(
+                    &iter,
+                    &[0, 1, 2],
+                    &[&icon, &buf_id, &name],
+                );
+            }
+                    let mut tree_path = gtk::TreePath::new();
+                    tree_path.down();
+                    while let Some(iter) = buf_list.get_iter(&tree_path) {
+                        if selected_buf == buf_list.get_value(&iter, 1).get::<u32>().unwrap() { // update 0 if columns change
+                            buf_tree.set_cursor(&tree_path, Option::<&gtk::TreeViewColumn>::None, false);
+                            break;
+                        }
+                        tree_path.next();
+                    }
         }));
 
         // TODO: on BufModifiedSet
