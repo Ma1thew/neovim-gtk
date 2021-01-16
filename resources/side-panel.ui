@@ -4,6 +4,8 @@
   <requires lib="gtk+" version="3.8"/>
   <object class="GtkTreeStore" id="buf_list">
     <columns>
+      <!-- column-name icon -->
+      <column type="GdkPixbuf"/>
       <!-- column-name buf_id -->
       <column type="guint"/>
       <!-- column-name buf_name -->
@@ -103,17 +105,25 @@
           <object class="GtkTreeViewColumn">
             <property name="sizing">autosize</property>
             <child>
-              <object class="GtkCellRendererText">
+              <object class="GtkCellRendererPixbuf">
                 <property name="xpad">6</property>
               </object>
               <attributes>
-                <attribute name="text">0</attribute>
+                <attribute name="pixbuf">0</attribute>
               </attributes>
             </child>
             <child>
               <object class="GtkCellRendererText"/>
               <attributes>
                 <attribute name="text">1</attribute>
+              </attributes>
+            </child>
+            <child>
+              <object class="GtkCellRendererText">
+                <property name="xpad">6</property>
+              </object>
+              <attributes>
+                <attribute name="text">2</attribute>
               </attributes>
             </child>
           </object>

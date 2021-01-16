@@ -174,7 +174,7 @@ impl FileBrowserWidget {
         let nvim_ref = self.nvim.as_ref().unwrap();
         let buf_list = &self.comps.buf_list;
         self.comps.buf_tree_view.connect_row_activated(clone!(nvim_ref, buf_list => move |_, path, _| {
-            let buf_num = buf_list.get_value(&buf_list.get_iter(path).unwrap(), 0).get::<u32>().unwrap();
+            let buf_num = buf_list.get_value(&buf_list.get_iter(path).unwrap(), 1).get::<u32>().unwrap();
             let mut nvim = nvim_ref.nvim().unwrap();
             for buf in nvim.list_bufs().unwrap() {
                 if buf.get_number(&mut nvim).unwrap() as u32 == buf_num {
@@ -275,15 +275,18 @@ impl FileBrowserWidget {
                     }
                 }
                 let iter = buf_list.append(None);
+                let icon: gdk_pixbuf::Pixbuf;
                 if name == "" {
                     name = String::from("[No Name]");
+                    icon = get_icon(vec![]);
                 } else {
                     name = name.split("/").last().unwrap().to_string();
+                    icon = get_icon(vec![&name[..], name.split(".").last().unwrap()]);
                 }
                 buf_list.set(
                     &iter,
-                    &[0, 1],
-                    &[&buf_id, &name],
+                    &[0, 1, 2],
+                    &[&icon, &buf_id, &name],
                 );
             }
         }));
@@ -296,7 +299,7 @@ impl FileBrowserWidget {
                     let mut tree_path = gtk::TreePath::new();
                     tree_path.down();
                     while let Some(iter) = buf_list.get_iter(&tree_path) {
-                        if num == buf_list.get_value(&iter, 0).get::<u32>().unwrap() { // update 0 if columns change
+                        if num == buf_list.get_value(&iter, 1).get::<u32>().unwrap() { // update 0 if columns change
                             buf_tree.set_cursor(&tree_path, Option::<&gtk::TreeViewColumn>::None, false);
                             break;
                         }
