@@ -173,13 +173,19 @@ impl FileBrowserWidget {
 
         let nvim_ref = self.nvim.as_ref().unwrap();
         let buf_list = &self.comps.buf_list;
-        self.comps.buf_tree_view.connect_row_activated(clone!(nvim_ref, buf_list => move |_, path, _| {
+        self.comps.buf_tree_view.connect_row_activated(clone!(nvim_ref, buf_list => move |_, path, col| {
             let buf_num = buf_list.get_value(&buf_list.get_iter(path).unwrap(), 1).get::<u32>().unwrap();
             let mut nvim = nvim_ref.nvim().unwrap();
-            for buf in nvim.list_bufs().unwrap() {
-                if buf.get_number(&mut nvim).unwrap() as u32 == buf_num {
-                    nvim.set_current_buf(&buf).unwrap();
-                    break;
+            if col.get_title().unwrap().as_str() == "close" {
+                if ! (buf_list.get_value(&buf_list.get_iter(path).unwrap(), 3).get::<&str>().unwrap() == "edit-delete-symbolic") {
+                    nvim.session.call("nvim_buf_delete", vec![neovim_lib::Value::from(buf_num), neovim_lib::Value::Map(vec![])]).unwrap();
+                }
+            } else {
+                for buf in nvim.list_bufs().unwrap() {
+                    if buf.get_number(&mut nvim).unwrap() as u32 == buf_num {
+                        if let Err(_) = nvim.set_current_buf(&buf) {}
+                        break;
+                    }
                 }
             }
         }));
@@ -262,7 +268,7 @@ impl FileBrowserWidget {
 
         let buf_list = &self.comps.buf_list;
         let nvim_ref = self.nvim.as_ref().unwrap();
-        shell_state.subscribe(SubscriptionKey::from("BufAdd,BufDelete,BufFilePost"), &[], clone!(buf_list, nvim_ref => move |_| {
+        shell_state.subscribe(SubscriptionKey::from("BufAdd,BufDelete,BufFilePost,BufModifiedSet"), &[], clone!(buf_list, nvim_ref => move |_| {
             let mut nvim = nvim_ref.nvim().unwrap();
             let buffers = nvim.list_bufs().unwrap();
             buf_list.clear();
@@ -283,17 +289,22 @@ impl FileBrowserWidget {
                     name = name.split("/").last().unwrap().to_string();
                     icon = get_icon(vec![&name[..], name.split(".").last().unwrap()]);
                 }
+                
+                let is_modified = if let Ok(neovim_lib::Value::Boolean(is_modified)) = buf.get_option(&mut nvim, "modified") {is_modified} else {false};
+
+                let close_icon_name = if is_modified {"edit-delete-symbolic"} else {"window-close-symbolic"};
+
                 buf_list.set(
                     &iter,
-                    &[0, 1, 2],
-                    &[&icon, &buf_id, &name],
+                    &[0, 1, 2, 3],
+                    &[&icon, &buf_id, &name, &close_icon_name],
                 );
             }
         }));
 
         let buf_tree = &self.comps.buf_tree_view;
         let buf_list = &self.comps.buf_list;
-        shell_state.subscribe(SubscriptionKey::from("BufEnter,BufDelete"), &["bufnr('%')"], clone!(buf_tree, buf_list => move |args| {
+        shell_state.subscribe(SubscriptionKey::from("BufEnter,BufDelete,BufModifiedSet"), &["bufnr('%')"], clone!(buf_tree, buf_list => move |args| {
             if let Some(buf_num) = args.into_iter().next() {
                 if let Ok(num) = buf_num.parse::<u32>() {
                     let mut tree_path = gtk::TreePath::new();
@@ -351,8 +362,6 @@ impl FileBrowserWidget {
                         tree_path.next();
                     }
         }));
-
-        // TODO: on BufModifiedSet
     }
 
     fn connect_events(&self) {

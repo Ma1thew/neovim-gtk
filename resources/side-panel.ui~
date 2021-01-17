@@ -137,7 +137,6 @@
         <child>
           <object class="GtkTreeViewColumn">
             <property name="sizing">autosize</property>
-            <property name="title" translatable="yes">close</property>
             <child>
               <object class="GtkCellRendererPixbuf">
                 <property name="xpad">6</property>
