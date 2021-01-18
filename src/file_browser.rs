@@ -268,7 +268,7 @@ impl FileBrowserWidget {
 
         let buf_list = &self.comps.buf_list;
         let nvim_ref = self.nvim.as_ref().unwrap();
-        shell_state.subscribe(SubscriptionKey::from("BufAdd,BufDelete,BufFilePost,BufModifiedSet"), &[], clone!(buf_list, nvim_ref => move |_| {
+        shell_state.subscribe(SubscriptionKey::from("BufAdd,BufDelete,BufFilePost"), &[], clone!(buf_list, nvim_ref => move |_| {
             let mut nvim = nvim_ref.nvim().unwrap();
             let buffers = nvim.list_bufs().unwrap();
             buf_list.clear();
@@ -302,15 +302,37 @@ impl FileBrowserWidget {
             }
         }));
 
+        let buf_list = &self.comps.buf_list;
+        shell_state.subscribe(SubscriptionKey::from("BufModifiedSet"), &["bufnr('%')", "getbufinfo(bufnr('%'))[0].changed"], clone!( buf_list => move |args| {
+            let mut args = args.into_iter();
+            if let Some(buf_num) = args.next() {
+                if let Ok(num) = buf_num.parse::<u32>() {
+                if let Some(is_modified) = args.next() {
+                    let mut tree_path = gtk::TreePath::new();
+                    tree_path.down();
+                    while let Some(iter) = buf_list.get_iter(&tree_path) {
+                        if num == buf_list.get_value(&iter, 1).get::<u32>().unwrap() {
+                            let new_icon = gdk_pixbuf::Value::from(if is_modified == "1" {"edit-delete-symbolic"} else {"window-close-symbolic"});
+                            buf_list.set_value(&iter, 3, &new_icon);
+                            break;
+                        }
+                        tree_path.next();
+                    }
+                }
+                }
+            }
+        }));
+
+
         let buf_tree = &self.comps.buf_tree_view;
         let buf_list = &self.comps.buf_list;
-        shell_state.subscribe(SubscriptionKey::from("BufEnter,BufDelete,BufModifiedSet"), &["bufnr('%')"], clone!(buf_tree, buf_list => move |args| {
+        shell_state.subscribe(SubscriptionKey::from("BufEnter,BufDelete"), &["bufnr('%')"], clone!(buf_tree, buf_list => move |args| {
             if let Some(buf_num) = args.into_iter().next() {
                 if let Ok(num) = buf_num.parse::<u32>() {
                     let mut tree_path = gtk::TreePath::new();
                     tree_path.down();
                     while let Some(iter) = buf_list.get_iter(&tree_path) {
-                        if num == buf_list.get_value(&iter, 1).get::<u32>().unwrap() { // update 0 if columns change
+                        if num == buf_list.get_value(&iter, 1).get::<u32>().unwrap() {
                             buf_tree.set_cursor(&tree_path, Option::<&gtk::TreeViewColumn>::None, false);
                             break;
                         }
