@@ -173,7 +173,8 @@ impl FileBrowserWidget {
 
         let nvim_ref = self.nvim.as_ref().unwrap();
         let buf_list = &self.comps.buf_list;
-        self.comps.buf_tree_view.connect_row_activated(clone!(nvim_ref, buf_list => move |_, path, col| {
+        let buf_tree = &self.comps.buf_tree_view;
+        self.comps.buf_tree_view.connect_row_activated(clone!(nvim_ref, buf_list, buf_tree => move |_, path, col| {
             let buf_num = buf_list.get_value(&buf_list.get_iter(path).unwrap(), 1).get::<u32>().unwrap();
             let mut nvim = nvim_ref.nvim().unwrap();
             if col.get_title().unwrap().as_str() == "close" {
@@ -183,7 +184,21 @@ impl FileBrowserWidget {
             } else {
                 for buf in nvim.list_bufs().unwrap() {
                     if buf.get_number(&mut nvim).unwrap() as u32 == buf_num {
-                        if let Err(_) = nvim.set_current_buf(&buf) {}
+                        if let Err(_) = nvim.set_current_buf(&buf) {
+                            if let Ok(new_buf) = nvim.get_current_buf() {
+                                if let Ok(new_buf_num) = new_buf.get_number(&mut nvim) {
+                                    let mut tree_path = gtk::TreePath::new();
+                                    tree_path.down();
+                                    while let Some(iter) = buf_list.get_iter(&tree_path) {
+                                        if new_buf_num as u32 == buf_list.get_value(&iter, 1).get::<u32>().unwrap() {
+                                            buf_tree.set_cursor(&tree_path, Option::<&gtk::TreeViewColumn>::None, false);
+                                            break;
+                                        }
+                                        tree_path.next();
+                                    }
+                                }
+                            }
+                        }
                         break;
                     }
                 }
