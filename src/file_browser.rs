@@ -386,10 +386,15 @@ impl FileBrowserWidget {
                     name = name.split("/").last().unwrap().to_string();
                     icon = get_icon(vec![&name[..], name.split(".").last().unwrap()]);
                 }
+                
+                let is_modified = if let Ok(neovim_lib::Value::Boolean(is_modified)) = buf.get_option(&mut nvim, "modified") {is_modified} else {false};
+
+                let close_icon_name = if is_modified {"edit-delete-symbolic"} else {"window-close-symbolic"};
+
                 buf_list.set(
                     &iter,
-                    &[0, 1, 2],
-                    &[&icon, &buf_id, &name],
+                    &[0, 1, 2, 3],
+                    &[&icon, &buf_id, &name, &close_icon_name],
                 );
             }
             let mut tree_path = gtk::TreePath::new();
