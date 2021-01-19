@@ -347,9 +347,11 @@ impl FileBrowserWidget {
                     let mut tree_path = gtk::TreePath::new();
                     tree_path.down();
                     while let Some(iter) = buf_list.get_iter(&tree_path) {
-                        if num == buf_list.get_value(&iter, 1).get::<u32>().unwrap() {
-                            buf_tree.set_cursor(&tree_path, Option::<&gtk::TreeViewColumn>::None, false);
-                            break;
+                        if let Some(model_num) = buf_list.get_value(&iter, 1).get::<u32>() {
+                            if num == model_num {
+                                buf_tree.set_cursor(&tree_path, Option::<&gtk::TreeViewColumn>::None, false);
+                                break;
+                            }
                         }
                         tree_path.next();
                     }
@@ -364,7 +366,8 @@ impl FileBrowserWidget {
             let mut nvim = nvim_ref.nvim().unwrap();
             let buffers = nvim.list_bufs().unwrap();
             let (selected_buf, _) = buf_tree.get_cursor();
-            let selected_buf = buf_list.get_value(&buf_list.get_iter(&selected_buf.unwrap()).unwrap(), 1).get::<u32>().unwrap();
+            if let Some(selected_buf) = selected_buf {
+            if let Some(selected_buf) = buf_list.get_value(&buf_list.get_iter(&selected_buf).unwrap(), 1).get::<u32>() {
             buf_list.clear();
             for buf in buffers {
                 let buf_id = buf.get_number(&mut nvim).unwrap();
@@ -389,15 +392,17 @@ impl FileBrowserWidget {
                     &[&icon, &buf_id, &name],
                 );
             }
-                    let mut tree_path = gtk::TreePath::new();
-                    tree_path.down();
-                    while let Some(iter) = buf_list.get_iter(&tree_path) {
-                        if selected_buf == buf_list.get_value(&iter, 1).get::<u32>().unwrap() { // update 0 if columns change
-                            buf_tree.set_cursor(&tree_path, Option::<&gtk::TreeViewColumn>::None, false);
-                            break;
-                        }
-                        tree_path.next();
-                    }
+            let mut tree_path = gtk::TreePath::new();
+            tree_path.down();
+            while let Some(iter) = buf_list.get_iter(&tree_path) {
+                if selected_buf == buf_list.get_value(&iter, 1).get::<u32>().unwrap() { // update 0 if columns change
+                    buf_tree.set_cursor(&tree_path, Option::<&gtk::TreeViewColumn>::None, false);
+                    break;
+                }
+                tree_path.next();
+            }
+            }
+            }
         }));
     }
 
