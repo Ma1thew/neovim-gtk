@@ -230,8 +230,9 @@ impl Projects {
         let shell = self.shell.borrow();
         if project {
             shell.cd(&uri);
+        } else {
+            shell.open_file(&uri);
         }
-        shell.open_file(&uri);
     }
 
     fn get_list_store(&self) -> ListStore {
