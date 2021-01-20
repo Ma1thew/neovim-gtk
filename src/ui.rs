@@ -191,6 +191,10 @@ impl Ui {
             }
 
             if restore_win_state {
+                if comps.window_state.is_fullscreen {
+                    window.fullscreen();
+                }
+
                 if comps.window_state.is_maximized {
                     window.maximize();
                 }
@@ -664,7 +668,7 @@ fn gtk_window_size_allocate(
     comps: &mut Components,
     main: &Paned,
 ) {
-    if !app_window.is_maximized() {
+    if !(app_window.is_maximized() || comps.window_state.is_fullscreen) {
         let (current_width, current_height) = app_window.get_size();
         comps.window_state.current_width = current_width;
         comps.window_state.current_height = current_height;
