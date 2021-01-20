@@ -3,6 +3,8 @@ use gdk_pixbuf::Pixbuf;
 use gtk;
 use gtk::prelude::*;
 
+use crate::theme_helper::is_dark_theme;
+
 use std::path::Path;
 use std::env;
 
@@ -62,19 +64,10 @@ fn is_black_monochrome(input: &Pixbuf) -> bool {
 }
 
 fn maybe_invert_pixbuf(input: Pixbuf) -> Pixbuf {
-    let prefer_dark_theme = env::var("NVIM_GTK_PREFER_DARK_THEME")
-        .map(|opt| opt.trim() == "1")
-        .unwrap_or(false);
-    if prefer_dark_theme && is_black_monochrome(&input) {
-        return invert_pixbuf(&input);
+    if is_dark_theme() && is_black_monochrome(&input) {
+        invert_pixbuf(&input)
     } else {
-        let theme = gtk::Settings::get_default().unwrap().get_property_gtk_theme_name().unwrap();
-        let theme = theme.as_str();
-        if (theme.ends_with("dark") || theme.ends_with("Inverse")) && is_black_monochrome(&input) {
-            return invert_pixbuf(&input);
-        } else {
-            return input;
-        }
+        input
     }
 }
 

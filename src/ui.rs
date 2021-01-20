@@ -26,6 +26,7 @@ use crate::settings::{Settings, SettingsLoader};
 use crate::shell::{self, Shell, ShellOptions};
 use crate::shell_dlg;
 use crate::subscriptions::{SubscriptionHandle, SubscriptionKey};
+use crate::theme_helper::is_dark_theme;
 
 macro_rules! clone {
     (@param _) => ( _ );
@@ -347,6 +348,26 @@ impl Ui {
         update_subtitle: &Option<SubscriptionHandle>,
         update_completeopt: &SubscriptionHandle,
     ) {
+        let sync_with_gtk_theme = env::var("NVIM_GTK_SET_BACKGROUND")
+            .map(|opt| opt.trim() == "1")
+            .unwrap_or(false);
+        if sync_with_gtk_theme {
+            if is_dark_theme() {
+                shell.nvim().unwrap().command(":set background=dark").report_err();
+            }
+            let shell_ref = shell.nvim_clone();
+            let update_func = move |_: &gtk::Settings| {
+                if is_dark_theme() {
+                    shell_ref.nvim().unwrap().command(":set background=dark").report_err();
+                } else {
+                    shell_ref.nvim().unwrap().command(":set background=light").report_err();
+                }
+            };
+            let update_func_clone = update_func.clone();
+            gtk::Settings::get_default().unwrap().connect_property_gtk_theme_name_notify(update_func);
+            gtk::Settings::get_default().unwrap().connect_property_gtk_application_prefer_dark_theme_notify(update_func_clone);
+        }
+
         plug_manager
             .borrow_mut()
             .init_nvim_client(shell.nvim_clone());
@@ -415,6 +436,7 @@ impl Ui {
 
                 if let Some(settings) = window.get_settings() {
                     settings.set_property_gtk_application_prefer_dark_theme(prefer_dark_theme);
+                    println!("{}, {}", settings.get_property_gtk_application_prefer_dark_theme(), prefer_dark_theme);
                 }
             }
             NvimCommand::ToggleFullscreen => {

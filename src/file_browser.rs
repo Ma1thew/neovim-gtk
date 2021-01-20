@@ -130,6 +130,14 @@ impl FileBrowserWidget {
             tree_reload(&store, &state.borrow());
             update_dir_list(&state.borrow_mut().current_dir, &dir_list_model, &dir_list);
         }));
+        let store = &self.store;
+        let state = &self.state;
+        let dir_list_model = &self.comps.dir_list_model;
+        let dir_list = &self.comps.dir_list;
+        gtk::Settings::get_default().unwrap().connect_property_gtk_application_prefer_dark_theme_notify(clone!(store, state, dir_list_model, dir_list => move |_| {
+            tree_reload(&store, &state.borrow());
+            update_dir_list(&state.borrow_mut().current_dir, &dir_list_model, &dir_list);
+        }));
 
         let store = &self.store;
         let state_ref = &self.state;
@@ -360,9 +368,11 @@ impl FileBrowserWidget {
         }));
 
         let buf_tree = &self.comps.buf_tree_view;
+        let buf_tree = buf_tree.clone();
         let buf_list = &self.comps.buf_list;
-        let nvim_ref = self.nvim.as_ref().unwrap();
-        gtk::Settings::get_default().unwrap().connect_property_gtk_theme_name_notify(clone!(buf_tree, buf_list, nvim_ref => move |_| {
+        let buf_list = buf_list.clone();
+        let nvim_ref = self.nvim.as_ref().unwrap().clone();
+        let update_func = move |_: &gtk::Settings| {
             let mut nvim = nvim_ref.nvim().unwrap();
             let buffers = nvim.list_bufs().unwrap();
             let (selected_buf, _) = buf_tree.get_cursor();
@@ -408,7 +418,10 @@ impl FileBrowserWidget {
             }
             }
             }
-        }));
+        };
+        let update_func_clone = update_func.clone();
+        gtk::Settings::get_default().unwrap().connect_property_gtk_theme_name_notify(update_func);
+        gtk::Settings::get_default().unwrap().connect_property_gtk_application_prefer_dark_theme_notify(update_func_clone);
     }
 
     fn connect_events(&self) {

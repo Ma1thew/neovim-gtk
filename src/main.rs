@@ -37,6 +37,7 @@ mod shell_dlg;
 mod subscriptions;
 mod tabline;
 mod icon_provider;
+mod theme_helper;
 
 use gio::prelude::*;
 use std::cell::RefCell;
