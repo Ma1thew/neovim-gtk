@@ -71,6 +71,7 @@ pub struct Components {
     headerbar_revealer: gtk::Revealer,
     fullscreen_header_bar: HeaderBar,
     fullscreen_headerbar_overlay: gtk::Overlay,
+    fullscreen_overlay_box: gtk::Box,
 }
 
 impl Components {
@@ -108,6 +109,7 @@ impl Components {
         let headerbar_revealer = gtk::Revealer::new();
         let fullscreen_header_bar = HeaderBar::new();
         let fullscreen_headerbar_overlay = gtk::Overlay::new();
+        let fullscreen_overlay_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
         Components {
             open_btn,
             fullscreen_btn,
@@ -118,6 +120,7 @@ impl Components {
             headerbar_revealer,
             fullscreen_header_bar,
             fullscreen_headerbar_overlay,
+            fullscreen_overlay_box,
         }
     }
 
@@ -330,11 +333,10 @@ impl Ui {
 
         let sidebar_action = UiMutex::new(show_sidebar_action);
         let comps_ref = self.comps.clone();
-        let projects = self.projects.clone();
         let file_browser = self.file_browser.clone();
         shell.set_nvim_command_cb(Some(
             move |shell: &mut shell::State, command: NvimCommand| {
-                Ui::nvim_command(shell, command, &sidebar_action, &projects, &comps_ref, &file_browser);
+                Ui::nvim_command(shell, command, &sidebar_action, &comps_ref, &file_browser);
             },
         ));
     }
@@ -396,14 +398,21 @@ impl Ui {
         shell: &mut shell::State,
         command: NvimCommand,
         sidebar_action: &UiMutex<SimpleAction>,
-        projects: &Arc<UiMutex<Projects>>,
-        comps: &UiMutex<Components>,
+        comps: &Arc<UiMutex<Components>>,
         sidebar: &UiMutex<FileBrowserWidget>
     ) {
         match command {
             NvimCommand::ShowProjectView => {
-                gtk::idle_add(clone!(projects => move || {
-                    projects.borrow_mut().show();
+                let comps_ref = &comps.clone();
+                gtk::idle_add(clone!(comps_ref => move || {
+                    let comps = comps_ref.borrow();
+                    if ! comps.window_state.is_fullscreen {
+                        comps.open_btn.clicked();
+                    } else {
+                        comps.fullscreen_headerbar_overlay.reorder_overlay(&comps.fullscreen_overlay_box, -1);
+                        comps.headerbar_revealer.set_reveal_child(true);
+                        comps.fs_open_btn.clicked();
+                    }
                     Continue(false)
                 }));
             }
@@ -436,7 +445,6 @@ impl Ui {
 
                 if let Some(settings) = window.get_settings() {
                     settings.set_property_gtk_application_prefer_dark_theme(prefer_dark_theme);
-                    println!("{}, {}", settings.get_property_gtk_application_prefer_dark_theme(), prefer_dark_theme);
                 }
             }
             NvimCommand::ToggleFullscreen => {
@@ -511,10 +519,17 @@ impl Ui {
         
         // fullscreen headerbar
         let projects = self.fs_projects.clone();
+        let comps_ref = self.comps.clone();
         comps.fullscreen_header_bar.pack_start(&comps.fs_open_btn);
         comps
             .fs_open_btn
-            .connect_clicked(move |_| projects.borrow_mut().show());
+            .connect_clicked(move |btn| {
+                if btn.get_active() {
+                    projects.borrow_mut().show();
+                } else {
+                    comps_ref.borrow().headerbar_revealer.set_reveal_child(false);
+                }
+            });
 
         let new_tab_btn =
             Button::new_from_icon_name(Some("tab-new-symbolic"), gtk::IconSize::SmallToolbar);
@@ -536,12 +551,10 @@ impl Ui {
         let menu_button = self.create_primary_menu_btn(app, &window);
         comps.fullscreen_header_bar.pack_end(&menu_button);
         comps.headerbar_revealer.add(&comps.fullscreen_header_bar);
-        let overlay_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
-        overlay_box.pack_start(&comps.headerbar_revealer, false, true, 0);
-        comps.fullscreen_headerbar_overlay.add_overlay(&overlay_box);
-        comps.fullscreen_headerbar_overlay.reorder_overlay(&overlay_box, 0);
+        comps.fullscreen_overlay_box.pack_start(&comps.headerbar_revealer, false, true, 0);
+        comps.fullscreen_headerbar_overlay.add_overlay(&comps.fullscreen_overlay_box);
+        comps.fullscreen_headerbar_overlay.reorder_overlay(&comps.fullscreen_overlay_box, 0);
         let comps_ref = self.comps.clone();
-        let overlay_box_ref = overlay_box.clone();
         window.connect_motion_notify_event(move |win, _| {
             if let Some(disp) = gdk::Display::get_default() {
                 if let Some(seat) = disp.get_default_seat() {
@@ -549,7 +562,7 @@ impl Ui {
                         let (_, _, y, _) = win.get_window().unwrap().get_device_position(&ptr);
                         if (! menu_button.get_active()) && (! comps_ref.borrow().fs_open_btn.get_active()) {
                             if y <= 4 && comps_ref.borrow().window_state.is_fullscreen { 
-                                comps_ref.borrow().fullscreen_headerbar_overlay.reorder_overlay(&overlay_box_ref, -1);
+                                comps_ref.borrow().fullscreen_headerbar_overlay.reorder_overlay(&comps_ref.borrow().fullscreen_overlay_box, -1);
                                 comps_ref.borrow().headerbar_revealer.set_reveal_child(true);
                             } else { 
                                 if y >= 50 && comps_ref.borrow().headerbar_revealer.get_reveal_child() {
@@ -566,7 +579,7 @@ impl Ui {
         let comps_ref = self.comps.clone();
         comps.headerbar_revealer.connect_property_child_revealed_notify( move |s| {
             if ! s.get_reveal_child() {
-                comps_ref.borrow().fullscreen_headerbar_overlay.reorder_overlay(&overlay_box, 0);
+                comps_ref.borrow().fullscreen_headerbar_overlay.reorder_overlay(&comps_ref.borrow().fullscreen_overlay_box, 0);
             }
         });
 
