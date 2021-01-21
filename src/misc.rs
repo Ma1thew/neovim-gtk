@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use std::mem;
+use std::env;
 
 use lazy_static::lazy_static;
 
@@ -77,6 +78,18 @@ pub fn about_comments() -> String {
          Minimum supported neovim version: {}",
         shell::MINIMUM_SUPPORTED_NVIM_VERSION
     )
+}
+
+pub fn substitute_home_for_tilde(path: &str) -> String {
+    if let Ok(home) = env::var("HOME") {
+        if let Some(stripped) = path.strip_prefix(&home[..]) {
+            format!("~{}", stripped)
+        } else {
+            path.to_string()
+        }
+    } else {
+        path.to_string()
+    }
 }
 
 #[cfg(test)]

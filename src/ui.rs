@@ -612,8 +612,8 @@ impl Ui {
             SubscriptionKey::from("DirChanged"),
             &["getcwd()"],
             move |args| {
-                header_bar.set_subtitle(Some(&*args[0]));
-                comps_ref.borrow().fullscreen_header_bar.set_subtitle(Some(&*args[0]));
+                header_bar.set_subtitle(Some(&misc::substitute_home_for_tilde(&*args[0])[..]));
+                comps_ref.borrow().fullscreen_header_bar.set_subtitle(Some(&misc::substitute_home_for_tilde(&*args[0])[..]));
             },
         );
 
@@ -735,7 +735,7 @@ fn update_window_title(comps: &Arc<UiMutex<Components>>, args: Vec<String>) {
 
     let file_path = &args[0];
     let dir = Path::new(&args[1]);
-    let filename = if file_path.is_empty() {
+    let filename = misc::substitute_home_for_tilde(if file_path.is_empty() {
         "[No Name]"
     } else if let Some(rel_path) = Path::new(&file_path)
         .strip_prefix(&dir)
@@ -745,7 +745,9 @@ fn update_window_title(comps: &Arc<UiMutex<Components>>, args: Vec<String>) {
         rel_path
     } else {
         &file_path
-    };
+    });
+
+    let filename = &filename[..];
 
     window.set_title(filename);
     comps.fullscreen_header_bar.set_title(Some(filename));

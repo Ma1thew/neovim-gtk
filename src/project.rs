@@ -15,6 +15,7 @@ use neovim_lib::{Neovim, NeovimApi, Value};
 use crate::nvim::ErrorReport;
 use crate::shell::Shell;
 use crate::ui::UiMutex;
+use crate::misc;
 
 use htmlescape::encode_minimal;
 
@@ -503,7 +504,7 @@ impl Entry {
             uri: uri.to_owned(),
             path: path
                 .parent()
-                .map(|s| format!("<small>{}</small>", encode_minimal(&s.to_string_lossy())))
+                .map(|s| format!("<small>{}</small>", misc::substitute_home_for_tilde(&encode_minimal(&s.to_string_lossy()))))
                 .unwrap_or_else(|| "".to_owned()),
             file_name: encode_minimal(name),
             name: name.to_owned(),
@@ -524,7 +525,7 @@ impl Entry {
             uri: uri.to_owned(),
             path: path
                 .parent()
-                .map(|s| format!("<small>{}</small>", encode_minimal(&s.to_string_lossy())))
+                .map(|s| format!("<small>{}</small>", misc::substitute_home_for_tilde(&encode_minimal(&s.to_string_lossy()))))
                 .unwrap_or_else(|| "".to_owned()),
             file_name: encode_minimal(&name),
             name,
@@ -545,7 +546,7 @@ impl Entry {
             uri: uri.to_owned(),
             path: path
                 .parent()
-                .map(|s| format!("<small>{}</small>", encode_minimal(&s.to_string_lossy())))
+                .map(|s| format!("<small>{}</small>", misc::substitute_home_for_tilde(&encode_minimal(&s.to_string_lossy()))))
                 .unwrap_or_else(|| "".to_owned()),
             file_name: encode_minimal(&name),
             name,
