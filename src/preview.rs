@@ -68,12 +68,9 @@ impl Preview {
         let state = Rc::new(RefCell::new(State::new()));
 
         let settings = webkit2gtk::Settings::new();
-        settings.set_enable_developer_extras(true);
         webview.set_settings(&settings);
 
         webview.set_can_focus(false);
-
-        webview.get_inspector().unwrap().show();
 
         container.pack_start(&webview, true, true, 0);
 
