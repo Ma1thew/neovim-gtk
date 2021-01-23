@@ -81,3 +81,11 @@ command! NGUnhideExtTabline call rpcnotify(1, 'Gui', 'Command', 'UnhideExtTablin
 command! NGSidebarShowLines call rpcnotify(1, 'Gui', 'Command', 'SidebarShowLines')
 command! NGSidebarHideLines call rpcnotify(1, 'Gui', 'Command', 'SidebarHideLines')
 command! NGSidebarToggleLines call rpcnotify(1, 'Gui', 'Command', 'SidebarToggleLines')
+command! NGTogglePreview call rpcnotify(1, 'Gui', 'Command', 'TogglePreview')
+command! NGShowPreview call rpcnotify(1, 'Gui', 'Command', 'ShowPreview')
+command! NGHidePreview call rpcnotify(1, 'Gui', 'Command', 'HidePreview')
+command! -nargs=1 NGSetPreviewType call rpcnotify(1, 'Gui', 'Command', 'SetPreviewType', <q-args>)
+command! -nargs=1 NGSetPreviewWidth call rpcnotify(1, 'Gui', 'Command', 'SetPreviewWidth', <q-args>)
+
+" autocmds
+autocmd BufEnter * call rpcnotify(1, 'Gui', 'Command', 'SetPreviewType', &filetype)

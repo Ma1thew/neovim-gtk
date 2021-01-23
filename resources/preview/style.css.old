@@ -1,0 +1,290 @@
+@charset "UTF-8";
+
+main {
+  font-size: 14px;
+  line-height: 1.6;
+  overflow: hidden
+}
+main>*: first-child {
+  margin-top: 0 !important
+}
+main>*: last-child {
+  margin-bottom: 0 !important
+}
+main a.absent {
+  color: #c00
+}
+main a.anchor {
+  display: block;
+  padding-left: 30px;
+  margin-left: -30px;
+  cursor: pointer;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0
+}
+main h1,main h2,main h3,main h4,main h5,main h6 {
+  margin: 20px 0 10px;
+  padding: 0;
+  font-weight: bold;
+  -webkit-font-smoothing: antialiased;
+  cursor: text;
+  position: relative
+}
+main h1 .mini-icon-link,main h2 .mini-icon-link,main h3 .mini-icon-link,main h4 .mini-icon-link,main h5 .mini-icon-link,main h6 .mini-icon-link {
+  display: none;
+  color: #000
+}
+main h1: hover a.anchor,main h2: hover a.anchor,main h3: hover a.anchor,main h4: hover a.anchor,main h5: hover a.anchor,main h6: hover a.anchor {
+  text-decoration: none;
+  line-height: 1;
+  padding-left: 0;
+  margin-left: -22px;
+  top: 15%
+}
+main h1: hover a.anchor .mini-icon-link,main h2: hover a.anchor .mini-icon-link,main h3: hover a.anchor .mini-icon-link,main h4: hover a.anchor .mini-icon-link,main h5: hover a.anchor .mini-icon-link,main h6: hover a.anchor .mini-icon-link {
+  display: inline-block
+}
+main h1 tt,main h1 code,main h2 tt,main h2 code,main h3 tt,main h3 code,main h4 tt,main h4 code,main h5 tt,main h5 code,main h6 tt,main h6 code {
+  font-size: inherit
+}
+main h1 {
+  font-size: 28px;
+  color: #000
+}
+main h2 {
+  font-size: 24px;
+  border-bottom: 1px solid #ccc;
+  color: #000
+}
+main h3 {
+  font-size: 18px
+}
+main h4 {
+  font-size: 16px
+}
+main h5 {
+  font-size: 14px
+}
+main h6 {
+  color: #777;
+  font-size: 14px
+}
+main p,main blockquote,main ul,main ol,main dl,main table,main pre {
+  margin: 15px 0
+}
+main hr {
+  background: transparent url("https: //a248.e.akamai.net/assets.github.com/assets/primer/markdown/dirty-shade-6ead57f83b0f117a80ba77232aff0673bfd71263.png") repeat-x 0 0;
+  border: 0 none;
+  color: #ccc;
+  height: 4px;
+  padding: 0
+}
+main>h2: first-child,main>h1: first-child,main>h1: first-child+h2,main>h3: first-child,main>h4: first-child,main>h5: first-child,main>h6: first-child {
+  margin-top: 0;
+  padding-top: 0
+}
+main a: first-child h1,main a: first-child h2,main a: first-child h3,main a: first-child h4,main a: first-child h5,main a: first-child h6 {
+  margin-top: 0;
+  padding-top: 0
+}
+main h1+p,main h2+p,main h3+p,main h4+p,main h5+p,main h6+p {
+  margin-top: 0
+}
+main li p.first {
+  display: inline-block
+}
+main ul,main ol {
+  padding-left: 30px
+}
+main ul.no-list,main ol.no-list {
+  list-style-type: none;
+  padding: 0
+}
+main ul li>: first-child,main ul li ul: first-of-type,main ol li>: first-child,main ol li ul: first-of-type {
+  margin-top: 0px
+}
+main ul ul,main ul ol,main ol ol,main ol ul {
+  margin-bottom: 0
+}
+main dl {
+  padding: 0
+}
+main dl dt {
+  font-size: 14px;
+  font-weight: bold;
+  font-style: italic;
+  padding: 0;
+  margin: 15px 0 5px
+}
+main dl dt: first-child {
+  padding: 0
+}
+main dl dt>: first-child {
+  margin-top: 0px
+}
+main dl dt>: last-child {
+  margin-bottom: 0px
+}
+main dl dd {
+  margin: 0 0 15px;
+  padding: 0 15px
+}
+main dl dd>: first-child {
+  margin-top: 0px
+}
+main dl dd>: last-child {
+  margin-bottom: 0px
+}
+main blockquote {
+  border-left: 4px solid #DDD;
+  padding: 0 15px;
+  color: #777
+}
+main blockquote>: first-child {
+  margin-top: 0px
+}
+main blockquote>: last-child {
+  margin-bottom: 0px
+}
+main table th {
+  font-weight: bold
+}
+main table th,main table td {
+  border: 1px solid #ccc;
+  padding: 6px 13px
+}
+main table tr {
+  border-top: 1px solid #ccc;
+  background-color: #fff
+}
+main table tr: nth-child(2n) {
+  background-color: #f8f8f8
+}
+main img {
+  max-width: 100%;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box
+}
+main span.frame {
+  display: block;
+  overflow: hidden
+}
+main span.frame>span {
+  border: 1px solid #ddd;
+  display: block;
+  float: left;
+  overflow: hidden;
+  margin: 13px 0 0;
+  padding: 7px;
+  width: auto
+}
+main span.frame span img {
+  display: block;
+  float: left
+}
+main span.frame span span {
+  clear: both;
+  color: #333;
+  display: block;
+  padding: 5px 0 0
+}
+main span.align-center {
+  display: block;
+  overflow: hidden;
+  clear: both
+}
+main span.align-center>span {
+  display: block;
+  overflow: hidden;
+  margin: 13px auto 0;
+  text-align: center
+}
+main span.align-center span img {
+  margin: 0 auto;
+  text-align: center
+}
+main span.align-right {
+  display: block;
+  overflow: hidden;
+  clear: both
+}
+main span.align-right>span {
+  display: block;
+  overflow: hidden;
+  margin: 13px 0 0;
+  text-align: right
+}
+main span.align-right span img {
+  margin: 0;
+  text-align: right
+}
+main span.float-left {
+  display: block;
+  margin-right: 13px;
+  overflow: hidden;
+  float: left
+}
+main span.float-left span {
+  margin: 13px 0 0
+}
+main span.float-right {
+  display: block;
+  margin-left: 13px;
+  overflow: hidden;
+  float: right
+}
+main span.float-right>span {
+  display: block;
+  overflow: hidden;
+  margin: 13px auto 0;
+  text-align: right
+}
+main code,main tt {
+  margin: 0 2px;
+  padding: 0px 5px;
+  border: 1px solid #eaeaea;
+  background-color: #f8f8f8;
+  border-radius: 3px
+}
+main code {
+  white-space: nowrap
+}
+main pre>code {
+  margin: 0;
+  padding: 0;
+  white-space: pre;
+  border: none;
+  background: transparent
+}
+main .highlight pre,main pre {
+  background-color: #f8f8f8;
+  border: 1px solid #ccc;
+  font-size: 13px;
+  line-height: 19px;
+  overflow: auto;
+  padding: 6px 10px;
+  border-radius: 3px
+}
+main pre code,main pre tt {
+  margin: 0;
+  padding: 0;
+  background-color: transparent;
+  border: none
+}
+
+main a {
+  color: #4183c4;
+  text-decoration: none;
+}
+
+main a:hover {
+  text-decoration: underline;
+}
+
+main pre,
+main code {
+  font-size: 12px;
+  font-family: Consolas, "Liberation Mono", Courier, monospace;
+}

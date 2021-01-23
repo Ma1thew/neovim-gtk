@@ -44,6 +44,7 @@ use crate::render::CellMetrics;
 use crate::subscriptions::{SubscriptionHandle, SubscriptionKey, Subscriptions};
 use crate::tabline::Tabline;
 use crate::ui::UiMutex;
+use crate::preview::{Preview, PreviewType};
 
 const DEFAULT_FONT_NAME: &str = "DejaVu Sans Mono 12";
 pub const MINIMUM_SUPPORTED_NVIM_VERSION: &str = "0.3.2";
@@ -130,6 +131,8 @@ pub struct State {
     tabs: Tabline,
     im_context: gtk::IMMulticontext,
     error_area: error::ErrorArea,
+    preview_splitter: gtk::Paned,
+    preview: Preview,
 
     options: ShellOptions,
     transparency_settings: TransparencySettigns,
@@ -154,7 +157,9 @@ impl State {
 
         let popup_menu = PopupMenu::new(&drawing_area);
         let cmd_line = CmdLine::new(&drawing_area, render_state.clone());
-
+        let preview_splitter = gtk::Paned::new(gtk::Orientation::Horizontal);
+        let preview = Preview::new();
+        
         State {
             grids: GridMap::new(),
             nvim: Rc::new(NeovimClient::new()),
@@ -177,6 +182,8 @@ impl State {
             tabs: Tabline::new(),
             im_context: gtk::IMMulticontext::new(),
             error_area: error::ErrorArea::new(),
+            preview_splitter,
+            preview,
 
             options,
             transparency_settings: TransparencySettigns::new(),
@@ -545,6 +552,34 @@ impl State {
 
         self.command_cb = cb;
     }
+
+    pub fn preview_set_visible(&self, state: bool) {
+        self.preview.is_visible(state);
+    }
+
+    pub fn preview_get_visible(&self) -> bool {
+        self.preview.get_visible()
+    }
+
+    pub fn preview_set_type(&self, prev_type: PreviewType) {
+        self.preview.set_type(prev_type);
+    }
+
+    pub fn preview_set_width(&self, width: i32) {
+        self.preview_splitter.set_position(self.preview_splitter.get_allocated_width() - width);
+    }
+
+    pub fn preview_set_fonts(&self, body: &str, mono: &str) {
+        self.preview.set_fonts(body, mono);
+    }
+
+    pub fn preview_update_color_scheme(&self) {
+        let hl = &self.render_state.borrow().hl;
+        self.preview.set_theme(
+            hl.bg().clone(),
+            hl.fg().clone(),
+        );
+    }
 }
 
 #[derive(PartialEq)]
@@ -666,10 +701,32 @@ impl Shell {
 
         state.im_context.set_use_preedit(false);
 
+        state.preview_splitter.pack1(&state.drawing_area, true, false);
+        state.preview_splitter.pack2(&*state.preview, true, false);
+        state.preview_splitter.set_position(state.preview_splitter.get_allocated_width() - 600);
+
+        state.preview.activate(&state.nvim);
+
+        let state_ref = &self.state;
+        state.subscribe(SubscriptionKey::from("BufEnter,BufWrite,TextChanged,TextChangedI,TextChangedP"), &["line('.')", "line('$')"], clone!(state_ref => move |args| {
+            let mut args = args.into_iter();
+            let line_num = if let Some(num) = args.next() {
+                if let Ok(num) = num.parse::<i64>() {
+                    num
+                } else { 0 }
+            } else { 0 };
+            let max_num = if let Some(num) = args.next() {
+                if let Ok(num) = num.parse::<i64>() {
+                    num
+                } else { 1 }
+            } else { 1 };
+            state_ref.borrow().preview.refresh(line_num, max_num);
+        }));
+
         let nvim_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
 
         nvim_box.pack_start(&*state.tabs, false, true, 0);
-        nvim_box.pack_start(&state.drawing_area, true, true, 0);
+        nvim_box.pack_start(&state.preview_splitter, true, true, 0);
 
         state.stack.add_named(&nvim_box, "Nvim");
         state.stack.add_named(&*state.error_area, "Error");
@@ -1385,6 +1442,7 @@ impl State {
         info: Vec<HashMap<String, Value>>,
     ) -> RepaintMode {
         self.render_state.borrow_mut().hl.set(id, &rgb_attr, &info);
+        self.preview_update_color_scheme();
         RepaintMode::Nothing
     }
 

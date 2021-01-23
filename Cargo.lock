@@ -46,9 +46,9 @@ dependencies = [
 
 [[package]]
 name = "atk-sys"
-version = "0.9.0"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5067531f752c01027f004032bb676e715aba74b75e904a7340a61ce3fb0b61b0"
+checksum = "e552c1776737a4c80110d06b36d099f47c727335f9aaa5d942a72b6863a8ec6f"
 dependencies = [
  "glib-sys",
  "gobject-sys",
@@ -172,14 +172,13 @@ dependencies = [
 
 [[package]]
 name = "cairo-sys-rs"
-version = "0.9.0"
+version = "0.9.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90a1ec04603a78c111886a385edcec396dbfbc57ea26b9e74aeea6a1fe55dcca"
+checksum = "ff65ba02cac715be836f63429ab00a767d48336efc5497c5637afb53b4f14d63"
 dependencies = [
  "glib-sys",
  "libc",
  "pkg-config",
- "winapi",
 ]
 
 [[package]]
@@ -365,9 +364,9 @@ dependencies = [
 
 [[package]]
 name = "gdk-sys"
-version = "0.9.0"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ebe06357212127f50575b535bdb04638f5d375bb41062287abc6c94e5b8067b"
+checksum = "6adf679e91d1bff0c06860287f80403e7db54c2d2424dce0a470023b56c88fbb"
 dependencies = [
  "cairo-sys-rs",
  "gdk-pixbuf-sys",
@@ -481,9 +480,9 @@ dependencies = [
 
 [[package]]
 name = "gtk-sys"
-version = "0.9.0"
+version = "0.9.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bbd9395497ae1d1915d1d6e522d51ae8745bf613906c34ac191c411250fc4025"
+checksum = "53def660c7b48b00b510c81ef2d2fbd3c570f1527081d8d7947f471513e1a4c1"
 dependencies = [
  "atk-sys",
  "cairo-sys-rs",
@@ -496,6 +495,12 @@ dependencies = [
  "pango-sys",
  "pkg-config",
 ]
+
+[[package]]
+name = "horrorshow"
+version = "0.6.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "597674f6c0cc85b1ad05a5383aad6809d4f85e935cdd96961faaa69d8896b624"
 
 [[package]]
 name = "htmlescape"
@@ -517,6 +522,25 @@ name = "itoa"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "501266b7edd0174f8530248f87f99c88fbe60ca4ef3dd486835b8d8d53136f7f"
+
+[[package]]
+name = "javascriptcore-rs"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a8b1f9f98eacacf8fd0430b92aebb9fba475928da5f8b77eb4269ceb298c3d15"
+dependencies = [
+ "glib",
+ "javascriptcore-rs-sys",
+]
+
+[[package]]
+name = "javascriptcore-rs-sys"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3f46ada8a08dcd75a10afae872fbfb51275df4a8ae0d46b8cc7c708f08dd2998"
+dependencies = [
+ "libc",
+]
 
 [[package]]
 name = "lazy_static"
@@ -541,9 +565,9 @@ dependencies = [
 
 [[package]]
 name = "memchr"
-version = "2.2.1"
+version = "2.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "88579771288728879b57485cc7d6b07d648c9f0141eb955f8ab7f9d45394468e"
+checksum = "0ee1c47aaa256ecabcaea351eae4a9b01ef39ed810004e298d2511ed284b1525"
 
 [[package]]
 name = "neovim-lib"
@@ -586,6 +610,7 @@ dependencies = [
  "gobject-sys",
  "gtk",
  "gtk-sys",
+ "horrorshow",
  "htmlescape",
  "lazy_static",
  "log",
@@ -597,6 +622,7 @@ dependencies = [
  "percent-encoding",
  "phf",
  "phf_codegen",
+ "pulldown-cmark",
  "regex",
  "rmpv",
  "serde",
@@ -606,6 +632,7 @@ dependencies = [
  "unicode-segmentation",
  "unicode-width",
  "unix-daemonize",
+ "webkit2gtk",
  "whoami",
  "winres",
 ]
@@ -627,9 +654,9 @@ dependencies = [
 
 [[package]]
 name = "pango-sys"
-version = "0.9.0"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1ee97abcad820f9875e032656257ad1c790e7b11a0e6ce2516a8f5b0d8f8213f"
+checksum = "86b93d84907b3cf0819bff8f13598ba72843bee579d5ebc2502e4b0367b4be7d"
 dependencies = [
  "glib-sys",
  "gobject-sys",
@@ -731,6 +758,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e0704ee1a7e00d7bb417d0770ea303c1bccbabf0ef1667dae92b5967f5f8a71"
 dependencies = [
  "unicode-xid",
+]
+
+[[package]]
+name = "pulldown-cmark"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ffade02495f22453cd593159ea2f59827aae7f53fa8323f756799b670881dcf8"
+dependencies = [
+ "bitflags",
+ "memchr",
+ "unicase",
 ]
 
 [[package]]
@@ -992,6 +1030,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "83da420ee8d1a89e640d0948c646c1c088758d3a3c538f943bfa97bdac17929d"
 
 [[package]]
+name = "soup-sys"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "48a2f246b51c81d4baa1ce611240c2f6e0323ae75f3b6cc9d2d2911e0567962c"
+dependencies = [
+ "bitflags",
+ "gio-sys",
+ "glib-sys",
+ "gobject-sys",
+ "libc",
+ "pkg-config",
+]
+
+[[package]]
 name = "stdweb"
 version = "0.4.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1108,6 +1160,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "unicase"
+version = "2.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "50f37be617794602aabbeee0be4f259dc1778fabe05e2d67ee8f79326d5cb4f6"
+dependencies = [
+ "version_check",
+]
+
+[[package]]
 name = "unicode-segmentation"
 version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1149,6 +1210,12 @@ name = "vec_map"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "05c78687fb1a80548ae3250346c3db86a80a7cdd77bda190189f2d0a0987c81a"
+
+[[package]]
+name = "version_check"
+version = "0.9.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b5a972e5669d67ba988ce3dc826706fb0a8b01471c088cb0b6110b805cc36aed"
 
 [[package]]
 name = "wasi"
@@ -1209,6 +1276,50 @@ name = "wasm-bindgen-shared"
 version = "0.2.55"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ca0b78d6d3be8589b95d1d49cdc0794728ca734adf36d7c9f07e6459508bb53d"
+
+[[package]]
+name = "webkit2gtk"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ad2b3e0b64094b0bbaa81bd73c56f992414e8d02fa763fbebc6f9911c1b36735"
+dependencies = [
+ "bitflags",
+ "cairo-rs",
+ "gdk",
+ "gdk-sys",
+ "gio",
+ "gio-sys",
+ "glib",
+ "glib-sys",
+ "gobject-sys",
+ "gtk",
+ "gtk-sys",
+ "javascriptcore-rs",
+ "libc",
+ "webkit2gtk-sys",
+]
+
+[[package]]
+name = "webkit2gtk-sys"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f438a797e617deaa635e482f0beb29abb3bbe1540709cc20a572cac499b2f980"
+dependencies = [
+ "atk-sys",
+ "bitflags",
+ "cairo-sys-rs",
+ "gdk-pixbuf-sys",
+ "gdk-sys",
+ "gio-sys",
+ "glib-sys",
+ "gobject-sys",
+ "gtk-sys",
+ "javascriptcore-rs-sys",
+ "libc",
+ "pango-sys",
+ "pkg-config",
+ "soup-sys",
+]
 
 [[package]]
 name = "whoami"

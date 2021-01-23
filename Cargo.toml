@@ -18,6 +18,7 @@ gdk-sys = "0.9"
 gio = "0.7.0"
 gobject-sys = "0.9"
 gdk-pixbuf = "0.7"
+webkit2gtk = "0.8.0"
 #gdk = { git = 'https://github.com/gtk-rs/gdk' }
 #gdk-sys = { git = 'https://github.com/gtk-rs/sys' }
 #glib = { git = 'https://github.com/gtk-rs/glib' }
@@ -50,6 +51,9 @@ atty = "0.2"
 dirs = "2.0"
 
 whoami = "0.6.0"
+
+pulldown-cmark = { version = "0.8", default-features = false, features = ["simd"] }
+horrorshow = "0.6.2"
 
 [target.'cfg(unix)'.dependencies]
 unix-daemonize = "0.1"

@@ -54,6 +54,10 @@ impl Color {
             (self.2 * 255.0) as u8
         )
     }
+    
+    pub fn hsp(&self) -> f64 {
+        ((0.299 * self.0.powi(2)) + (0.587 * self.1.powi(2)) + (0.114 * self.2.powi(2))).sqrt()
+    }
 
     pub fn inverse(&self, inverse_level: f64) -> Cow<Color> {
         debug_assert!(inverse_level >= 0.0 && inverse_level <= 1.0);
@@ -66,6 +70,48 @@ impl Color {
                 (inverse_level - self.1).abs(),
                 (inverse_level - self.2).abs(),
             ))
+        }
+    }
+
+    pub fn darken(&self, darken_level: f64) -> Color {
+        Color(
+            Color::darken_color(self.0, darken_level),
+            Color::darken_color(self.1, darken_level),
+            Color::darken_color(self.2, darken_level),
+        )
+    }
+
+    fn darken_color(color: f64, darken_level: f64) -> f64 {
+        let darkened = color - (1.0 * darken_level);
+        if darkened.is_sign_negative() {
+            0.0
+        } else {
+            darkened
+        }
+    }
+
+    pub fn lighten(&self, lighten_level: f64) -> Color {
+        Color(
+            Color::lighten_color(self.0, lighten_level),
+            Color::lighten_color(self.1, lighten_level),
+            Color::lighten_color(self.2, lighten_level),
+        )
+    }
+
+    fn lighten_color(color: f64, darken_level: f64) -> f64 {
+        let lightened = color + (1.0 * darken_level);
+        if lightened > 1.0  {
+            1.0
+        } else {
+            lightened
+        }
+    }
+
+    pub fn fade(&self, fade_level: f64) -> Color {
+        if self.hsp() > 0.5 {
+            self.darken(fade_level)
+        } else {
+            self.lighten(fade_level)
         }
     }
 }

@@ -10,6 +10,7 @@ use crate::ui::UiMutex;
 
 use rmpv;
 use crate::value::ValueMapExt;
+use crate::preview::PreviewType;
 
 use super::handler::NvimHandler;
 use super::repaint_mode::RepaintMode;
@@ -210,6 +211,28 @@ pub fn call_gui_event(
                 "SidebarShowLines" => ui.on_command(NvimCommand::SidebarShowLines),
                 "SidebarHideLines" => ui.on_command(NvimCommand::SidebarHideLines),
                 "SidebarToggleLines" => ui.on_command(NvimCommand::SidebarToggleLines),
+                "TogglePreview" => ui.preview_set_visible(! ui.preview_get_visible()),
+                "ShowPreview" => ui.preview_set_visible(true),
+                "HidePreview" => ui.preview_set_visible(false),
+                "SetPreviewType" => {
+                    match try_str!(args.get(1).cloned().unwrap_or_else(|| Value::from("none"))).trim() {
+                        "html" => ui.preview_set_type(PreviewType::HTML),
+                        "markdown" => ui.preview_set_type(PreviewType::Markdown),
+                        _ => ui.preview_set_type(PreviewType::Plain),
+                    }
+                }
+                "SetPreviewWidth" => {
+                    match try_str!(args.get(1).cloned().unwrap_or_else(|| Value::from(-1))).parse::<i32>() {
+                        Ok(val) => ui.preview_set_width(val),
+                        Err(_) => {},
+                        };
+                }
+                "SetPreviewFonts" => {
+                    ui.preview_set_fonts(
+                        try_str!(args.get(1).cloned().unwrap_or_else(|| Value::from("sans-serif"))).trim(),
+                        try_str!(args.get(2).cloned().unwrap_or_else(|| Value::from("monospace"))).trim(),
+                    )
+                }
                 _ => error!("Unknown command"),
             };
         }

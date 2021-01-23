@@ -166,6 +166,11 @@ impl Ui {
         }
         self.initialized = true;
 
+        if gtk::init().is_err() {
+            eprintln!("Failed to initialize GTK!");
+            std::process::exit(1);
+        }
+
         let mut settings = self.settings.borrow_mut();
         settings.init();
 
@@ -277,6 +282,9 @@ impl Ui {
         window.add(&self.comps.borrow().fullscreen_headerbar_overlay);
 
         window.show_all();
+
+        self.shell.borrow().state.borrow().preview_set_visible(false);
+        self.shell.borrow().state.borrow().preview_set_width(self.shell.borrow().get_allocated_width() / 2);
 
         if restore_win_state {
             // Hide sidebar, if it wasn't shown last time.

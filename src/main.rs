@@ -38,6 +38,7 @@ mod subscriptions;
 mod tabline;
 mod icon_provider;
 mod theme_helper;
+mod preview;
 
 use gio::prelude::*;
 use std::cell::RefCell;
