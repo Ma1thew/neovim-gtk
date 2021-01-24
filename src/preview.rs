@@ -250,6 +250,7 @@ impl Preview {
                             : "img { max-width: 80% }";
                             : (fonts.clone());
                             : (theme.clone());
+                            : Raw(include_str!("../resources/preview/style.css"));
 //                            : Raw(HLJS_CSS.as_str());
                             : Raw(include_str!("../resources/preview/katex/katex.css"));
                             : Raw(state.katex_font_css.clone());
