@@ -39,6 +39,7 @@ mod tabline;
 mod icon_provider;
 mod theme_helper;
 mod preview;
+mod preview_fonts;
 
 use gio::prelude::*;
 use std::cell::RefCell;

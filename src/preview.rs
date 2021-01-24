@@ -13,6 +13,7 @@ use std::cell::RefCell;
 use neovim_lib::NeovimApi;
 use crate::nvim;
 use crate::color::Color;
+use crate::preview_fonts::get_katex_font_css;
 
 pub enum PreviewType {
     Markdown,
@@ -33,6 +34,7 @@ struct State {
     should_refresh: bool,
     body_font: String,
     mono_font: String,
+    katex_font_css: String,
     theme: Theme,
 }
 
@@ -44,6 +46,7 @@ impl State {
             should_refresh: false,
             body_font: String::from("sans-serif"),
             mono_font: String::from("monospace"),
+            katex_font_css: get_katex_font_css(),
             theme: Theme {
                 bg: Color(1.0, 1.0, 1.0),
                 fg: Color(0.0, 0.0, 0.0),
@@ -68,8 +71,9 @@ impl Preview {
         let state = Rc::new(RefCell::new(State::new()));
 
         let settings = webkit2gtk::Settings::new();
+        settings.set_enable_developer_extras(true);
         webview.set_settings(&settings);
-
+        webview.get_inspector().unwrap().show();
         webview.set_can_focus(false);
 
         container.pack_start(&webview, true, true, 0);
@@ -148,8 +152,7 @@ impl Preview {
         match &state.prev_type {
             PreviewType::HTML => self.webview.load_html(&lines.join("\n"), Some(&file_name)),
             PreviewType::Markdown => self.webview.load_html(&self.render(&lines.join("\n"), line_number as f64 / max_lines as f64), Some(&file_name)),
-            
-            PreviewType::Plain => self.webview.load_plain_text(&lines.join("\n")),
+            PreviewType::Plain => self.webview.load_html(&self.render(format!("```\n{}\n```", &lines.join("\n")).as_str(), line_number as f64 / max_lines as f64), None),
         }
     }
 
@@ -204,7 +207,7 @@ impl Preview {
             main code, main tt, main pre {{
                 background-color: {}
             }}
-            main h2 {{
+            main h1, main h2 {{
                 border-bottom: 1px solid {}
             }}
             main h6, main blockquote {{
@@ -227,6 +230,16 @@ impl Preview {
             state.theme.fg_faded.to_hex(),
             state.theme.fg_faded.to_hex(),
         );
+        let katex_load = r#"
+            renderMathInElement(document.body, {
+                "delimiters": [
+                    {left: "$$", right: "$$", display: true},
+                    {left: "$", right: "$", display: false},
+                    {left: "\\(", right: "\\)", display: false},
+                    {left: "\\[", right: "\\]", display: true}
+                ]
+            });
+            "#;
 
         format!(
             "{}",
@@ -240,11 +253,14 @@ impl Preview {
                             : (fonts.clone());
                             : (theme.clone());
 //                            : Raw(HLJS_CSS.as_str());
-                            : Raw(include_str!("../resources/preview/style.css"));
+                            : Raw(include_str!("../resources/preview/katex/katex.css"));
+                            : Raw(state.katex_font_css.clone());
                         }
-//                        script {
+                        script {
 //                            : Raw(JS.as_str());
-//                    }
+                            : Raw(include_str!("../resources/preview/katex/katex.js"));
+                            : Raw(include_str!("../resources/preview/katex/auto-render.js"));
+                    }
                         script {
                             : (scroll.clone());
 //                            : Raw("hljs.initHighlightingOnLoad();")
@@ -254,6 +270,9 @@ impl Preview {
                         : Raw("<main>");
                             : Raw(&Preview::mark_to_html(markdown));
                         : Raw("</main>");
+                        script {
+                            : Raw(katex_load.clone());
+                        }
                     }
                 }
             )
@@ -268,4 +287,3 @@ impl Deref for Preview {
         &self.container
     }
 }
-

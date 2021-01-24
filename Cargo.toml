@@ -54,6 +54,7 @@ whoami = "0.6.0"
 
 pulldown-cmark = { version = "0.8", default-features = false, features = ["simd"] }
 horrorshow = "0.6.2"
+base64 = "0.13.0"
 
 [target.'cfg(unix)'.dependencies]
 unix-daemonize = "0.1"
