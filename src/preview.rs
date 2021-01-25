@@ -164,8 +164,12 @@ impl Preview {
         }
         let scroll = format!(
             r#"
-            window.scrollTo(0,document.body.scrollHeight);
-            document.getElementById('line_{}').scrollIntoView();
+            for (i = {}; i >= 0; i--) {{
+                if (line = document.getElementById('line_' + i)) {{
+                    line.scrollIntoView();
+                    break;
+                }}
+            }}
             "#,
             line_number,
         );
@@ -202,8 +206,12 @@ impl Preview {
         let state = self.state.borrow();
         let scroll = format!(
             r#"
-            window.scrollTo(0,document.body.scrollHeight);
-            document.getElementById('line_{}').scrollIntoView();
+            for (i = {}; i >= 0; i--) {{
+                if (line = document.getElementById('line_' + i)) {{
+                    line.scrollIntoView();
+                    break;
+                }}
+            }}
             "#,
             line,
         );
