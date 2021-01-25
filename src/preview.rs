@@ -206,12 +206,7 @@ impl Preview {
         let state = self.state.borrow();
         let scroll = format!(
             r#"
-            for (i = {}; i >= 0; i--) {{
-                if (line = document.getElementById('line_' + i)) {{
-                    line.scrollIntoView();
-                    break;
-                }}
-            }}
+            document.getElementById('line_{}').scrollIntoView();
             "#,
             line,
         );
