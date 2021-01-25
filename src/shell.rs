@@ -708,19 +708,18 @@ impl Shell {
         state.preview.activate(&state.nvim);
 
         let state_ref = &self.state;
-        state.subscribe(SubscriptionKey::from("BufEnter,BufWrite,TextChanged,TextChangedI,TextChangedP"), &["line('.')", "line('$')"], clone!(state_ref => move |args| {
+        state.subscribe(SubscriptionKey::from("BufEnter,BufWrite,TextChanged,TextChangedI,TextChangedP"), &[], clone!(state_ref => move |_| {
+            state_ref.borrow().preview.refresh();
+        }));
+
+        let state_ref = &self.state;
+        state.subscribe(SubscriptionKey::from("CursorMoved"), &["line('.')"], clone!(state_ref => move |args| {
             let mut args = args.into_iter();
-            let line_num = if let Some(num) = args.next() {
-                if let Ok(num) = num.parse::<i64>() {
-                    num
-                } else { 0 }
-            } else { 0 };
-            let max_num = if let Some(num) = args.next() {
-                if let Ok(num) = num.parse::<i64>() {
-                    num
-                } else { 1 }
-            } else { 1 };
-            state_ref.borrow().preview.refresh(line_num, max_num);
+            if let Some(num) = args.next() {
+                if let Ok(line_number) = num.parse::<usize>() {
+                    state_ref.borrow().preview.refresh_scroll(line_number - 1);
+                }
+            }
         }));
 
         let nvim_box = gtk::Box::new(gtk::Orientation::Vertical, 0);

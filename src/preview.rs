@@ -2,7 +2,7 @@ use gtk;
 use webkit2gtk::*;
 use gtk::BoxExt;
 use gtk::WidgetExt;
-use pulldown_cmark::{html, Options, Parser};
+use pulldown_cmark::{html, Options, Parser, Event, CowStr};
 use horrorshow::helper::doctype;
 use horrorshow::{Raw, html};
 
@@ -96,7 +96,7 @@ impl Preview {
             let mut state = self.state.borrow_mut();
             state.prev_type = prev_type;
         }
-        self.refresh(0, 1); // might be able to skip bufenter refresh
+        self.refresh(); // might be able to skip bufenter refresh
     }
 
     pub fn set_fonts(&self, body: &str, mono: &str) {
@@ -106,7 +106,7 @@ impl Preview {
             state.body_font = body.to_string();
             state.mono_font = mono.to_string();
         }
-        self.refresh(0, 1);
+        self.refresh();
     }
 
     pub fn is_visible(&self, should_ref: bool) {
@@ -115,7 +115,7 @@ impl Preview {
             let mut state = self.state.borrow_mut();
             state.should_refresh = should_ref;
         }
-        self.refresh(0, 1);
+        self.refresh();
     }
 
     pub fn set_theme(&self, bg: Color, fg: Color) {
@@ -130,10 +130,10 @@ impl Preview {
                 fg_faded,
             }
         }
-        self.refresh(0, 1);
+        self.refresh();
     }
 
-    pub fn refresh(&self, line_number: i64, max_lines: i64) {
+    pub fn refresh(&self) {
         if ! self.state.borrow().should_refresh {
             return
         }
@@ -141,17 +141,35 @@ impl Preview {
         let mut nvim = state.nvim.as_ref().unwrap().nvim().unwrap();
         let buffer = nvim.get_current_buf().unwrap();
         let lines = buffer.get_lines(&mut nvim, 0, -1, true).unwrap();
+        let lines = lines.join("\n");
         let file_name = format!("file://{}", match buffer.get_name(&mut nvim).unwrap().as_str() {
             "" => {
                 format!("{}/temp", nvim.eval("getcwd()").unwrap().as_str().unwrap())
             },
             path => path.to_string()
         });
+        let window = nvim.get_current_win().unwrap();
+        let cursor = window.get_cursor(&mut nvim).unwrap();
+        let line_number = Preview::offset_into_line(&lines, buffer.get_offset(&mut nvim, cursor.0).unwrap_or(0) as usize) - 1;
         match &state.prev_type {
-            PreviewType::HTML => self.webview.load_html(&lines.join("\n"), Some(&file_name)),
-            PreviewType::Markdown => self.webview.load_html(&self.render(&lines.join("\n"), line_number as f64 / max_lines as f64), Some(&file_name)),
-            PreviewType::Plain => self.webview.load_html(&self.render(format!("```\n{}\n```", &lines.join("\n")).as_str(), line_number as f64 / max_lines as f64), None),
+            PreviewType::HTML => self.webview.load_html(&lines, Some(&file_name)),
+            PreviewType::Markdown => self.webview.load_html(&self.render(&lines, line_number), Some(&file_name)),
+            PreviewType::Plain => self.webview.load_html(&self.render(format!("```\n{}\n```", &lines).as_str(), line_number), None),
         }
+    }
+
+    pub fn refresh_scroll(&self, line_number: usize) {
+        if ! self.state.borrow().should_refresh {
+            return
+        }
+        let scroll = format!(
+            r#"
+            window.scrollTo(0,document.body.scrollHeight);
+            document.getElementById('line_{}').scrollIntoView();
+            "#,
+            line_number,
+        );
+        self.webview.run_javascript(&scroll, None::<&gio::Cancellable>, |_| {});
     }
 
     fn mark_to_html(markdown: &str) -> String {
@@ -160,21 +178,34 @@ impl Preview {
         options.insert(Options::ENABLE_TABLES);
         options.insert(Options::ENABLE_FOOTNOTES);
         options.insert(Options::ENABLE_TASKLISTS);
-        let parser = Parser::new_ext(&markdown, options);
+        let mut parser: Vec<Event> = Vec::new();
+        for (event, range) in Parser::new_ext(&markdown, options).into_offset_iter() {
+            for line in Preview::offset_into_line(markdown, range.start)..Preview::offset_into_line(markdown, range.end) {
+                parser.push(Event::Html(CowStr::from(format!("<mark id=line_{}></mark>", line))));
+            }
+            parser.push(event);
+        }
         let mut buffer = String::new();
-        html::push_html(&mut buffer, parser);
+        html::push_html(&mut buffer, parser.into_iter());
         buffer
     }
 
-    pub fn render(&self, markdown: &str, scroll: f64) -> String {
+    fn offset_into_line(text: &str, offset: usize) -> usize {
+        if let Some(slice) = text.get(0..offset) {
+            slice.matches("\n").count()
+        } else {
+            text.matches("\n").count()
+        }
+    }
+
+    pub fn render(&self, markdown: &str, line: usize) -> String {
         let state = self.state.borrow();
         let scroll = format!(
             r#"
-            let target = document.documentElement.scrollHeight * {};
-            function scrollDown() {{ window.scroll(0, target); }};
-            window.onload = scrollDown;
+            window.scrollTo(0,document.body.scrollHeight);
+            document.getElementById('line_{}').scrollIntoView();
             "#,
-            scroll
+            line,
         );
         let fonts = format!(
             r#"
@@ -228,6 +259,105 @@ impl Preview {
             state.theme.fg_faded.to_hex(),
             state.theme.fg_faded.to_hex(),
         );
+        let hljs_theme = format!(
+            r#"
+                .hljs {{
+                  display: block;
+                  overflow-x: auto;
+                  padding: 0.5em;
+                  color: {};
+                  background: {};
+                }}
+
+                .hljs-comment,
+                .hljs-quote {{
+                  color: #998;
+                  font-style: italic;
+                }}
+
+                .hljs-keyword,
+                .hljs-selector-tag,
+                .hljs-subst {{
+                  color: #333;
+                  font-weight: bold;
+                }}
+
+                .hljs-number,
+                .hljs-literal,
+                .hljs-variable,
+                .hljs-template-variable,
+                .hljs-tag .hljs-attr {{
+                  color: #008080;
+                }}
+
+                .hljs-string,
+                .hljs-doctag {{
+                  color: #d14;
+                }}
+
+                .hljs-title,
+                .hljs-section,
+                .hljs-selector-id {{
+                  color: #900;
+                  font-weight: bold;
+                }}
+
+                .hljs-subst {{
+                  font-weight: normal;
+                }}
+
+                .hljs-type,
+                .hljs-class .hljs-title {{
+                  color: #458;
+                  font-weight: bold;
+                }}
+
+                .hljs-tag,
+                .hljs-name,
+                .hljs-attribute {{
+                  color: #000080;
+                  font-weight: normal;
+                }}
+
+                .hljs-regexp,
+                .hljs-link {{
+                  color: #009926;
+                }}
+
+                .hljs-symbol,
+                .hljs-bullet {{
+                  color: #990073;
+                }}
+
+                .hljs-built_in,
+                .hljs-builtin-name {{
+                  color: #0086b3;
+                }}
+
+                .hljs-meta {{
+                  color: #999;
+                  font-weight: bold;
+                }}
+
+                .hljs-deletion {{
+                  background: #fdd;
+                }}
+
+                .hljs-addition {{
+                  background: #dfd;
+                }}
+
+                .hljs-emphasis {{
+                  font-style: italic;
+                }}
+
+                .hljs-strong {{
+                  font-weight: bold;
+                }}
+            "#,
+            state.theme.fg.to_hex(),
+            state.theme.bg_faded.to_hex(),
+        );
         let katex_load = r#"
             renderMathInElement(document.body, {
                 "delimiters": [
@@ -248,21 +378,21 @@ impl Preview {
                         style {
                             : "body { width: 95%; margin: 0 auto }";
                             : "img { max-width: 80% }";
+                            : "main { margin-bottom: 100px }";
                             : (fonts.clone());
                             : (theme.clone());
                             : Raw(include_str!("../resources/preview/style.css"));
-//                            : Raw(HLJS_CSS.as_str());
                             : Raw(include_str!("../resources/preview/katex/katex.css"));
                             : Raw(state.katex_font_css.clone());
+                            : Raw(hljs_theme.clone());
                         }
                         script {
-//                            : Raw(JS.as_str());
                             : Raw(include_str!("../resources/preview/katex/katex.js"));
                             : Raw(include_str!("../resources/preview/katex/auto-render.js"));
-                    }
+                        }
                         script {
-                            : (scroll.clone());
-//                            : Raw("hljs.initHighlightingOnLoad();")
+                            : Raw(include_str!("../resources/preview/highlight/highlight.pack.js"));
+                            : Raw("hljs.initHighlightingOnLoad();")
                         }
                     }
                     body {
@@ -270,6 +400,7 @@ impl Preview {
                             : Raw(&Preview::mark_to_html(markdown));
                         : Raw("</main>");
                         script {
+                            : (scroll.clone());
                             : Raw(katex_load.clone());
                         }
                     }
