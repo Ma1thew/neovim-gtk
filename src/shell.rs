@@ -1441,7 +1441,11 @@ impl State {
         info: Vec<HashMap<String, Value>>,
     ) -> RepaintMode {
         self.render_state.borrow_mut().hl.set(id, &rgb_attr, &info);
-        self.preview_update_color_scheme();
+        for item in info { 
+            if item.get("hi_name").and_then(Value::as_str) == Some("Pmenu") {
+                self.preview_update_color_scheme();
+            }
+        }
         RepaintMode::Nothing
     }
 
