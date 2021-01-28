@@ -2,18 +2,23 @@ use gtk;
 use webkit2gtk::*;
 use gtk::BoxExt;
 use gtk::WidgetExt;
+use glib::object::Cast;
 use pulldown_cmark::{html, Options, Parser, Event, CowStr};
 use horrorshow::helper::doctype;
 use horrorshow::{Raw, html};
+use urlencoding::decode;
 
 use std::rc::Rc;
 use std::ops::Deref;
 use std::cell::RefCell;
 
 use neovim_lib::NeovimApi;
+use neovim_lib::NeovimApiAsync;
 use crate::nvim;
+use crate::nvim::ErrorReport;
 use crate::color::Color;
 use crate::preview_fonts::get_katex_font_css;
+use crate::misc::escape_filename;
 
 pub enum PreviewType {
     Markdown,
@@ -74,6 +79,7 @@ impl Preview {
         webview.set_settings(&settings);
         webview.set_can_focus(false);
 
+
         container.pack_start(&webview, true, true, 0);
 
         Preview {
@@ -89,6 +95,36 @@ impl Preview {
         if state.nvim.is_none() {
             state.nvim = Some(nvim.clone());
         }
+
+        let nvim_ref = state.nvim.as_ref().unwrap();
+        self.webview.connect_decide_policy(clone!(nvim_ref => move |_, decision, decision_type| {
+            let navigation_policy = decision.clone().downcast::<webkit2gtk::NavigationPolicyDecision>().unwrap(); 
+
+            if (decision_type == webkit2gtk::PolicyDecisionType::NavigationAction ||
+                decision_type == webkit2gtk::PolicyDecisionType::NewWindowAction) &&
+                navigation_policy.get_mouse_button() != 0 {
+                // ...
+                decision.ignore();
+                let uri = navigation_policy.get_request().unwrap().get_uri().unwrap();
+                let uri = uri.as_str();
+                if let Some(path) = uri.strip_prefix("file://") {
+                    if path.ends_with(".md") {
+                        let path = decode(path).unwrap_or(path.to_string());
+                        let path = escape_filename(&path);
+                        nvim_ref.nvim().unwrap().command_async(&format!(":e {}", path))
+                            .cb(|r| r.report_err())
+                            .call();
+                    } else {
+                        let _r = gio::AppInfo::launch_default_for_uri(uri, Some(&gio::AppLaunchContext::new()));
+                    }
+                } else {
+                    let _r = gio::AppInfo::launch_default_for_uri(uri, Some(&gio::AppLaunchContext::new()));
+                }
+                true
+            } else {
+                false
+            }
+        }));
     }
 
     pub fn set_type(&self, prev_type: PreviewType) {
@@ -150,7 +186,10 @@ impl Preview {
         });
         let window = nvim.get_current_win().unwrap();
         let cursor = window.get_cursor(&mut nvim).unwrap();
-        let line_number = Preview::offset_into_line(&lines, buffer.get_offset(&mut nvim, cursor.0).unwrap_or(0) as usize) - 1;
+        let line_number = {
+            let num = Preview::offset_into_line(&lines, buffer.get_offset(&mut nvim, cursor.0).unwrap_or(1) as usize);
+            if num == 0 { 0 } else { num - 1 }
+        };
         match &state.prev_type {
             PreviewType::HTML => self.webview.load_html(&lines, Some(&file_name)),
             PreviewType::Markdown => self.webview.load_html(&self.render(&lines, line_number), Some(&file_name)),
