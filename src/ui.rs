@@ -382,6 +382,7 @@ impl Ui {
             .borrow_mut()
             .init_nvim_client(shell.nvim_clone());
         file_browser.borrow_mut().init(shell);
+        file_browser.borrow().update_buf_list();
         shell.set_autocmds();
         shell.run_now(&update_title);
         shell.run_now(&update_completeopt);
