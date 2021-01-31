@@ -14,8 +14,9 @@ use gtk::prelude::*;
 use gtk::SettingsExt;
 
 use neovim_lib::{NeovimApi, NeovimApiAsync};
+use htmlescape::encode_minimal;
 
-use crate::misc::escape_filename;
+use crate::misc::{escape_filename, substitute_home_for_tilde};
 use crate::nvim::{ErrorReport, NeovimClient, NeovimRef};
 use crate::shell;
 use crate::subscriptions::SubscriptionKey;
@@ -190,24 +191,19 @@ impl FileBrowserWidget {
                     nvim.session.call("nvim_buf_delete", vec![neovim_lib::Value::from(buf_num), neovim_lib::Value::Map(vec![])]).unwrap();
                 }
             } else {
-                for buf in nvim.list_bufs().unwrap() {
-                    if buf.get_number(&mut nvim).unwrap() as u32 == buf_num {
-                        if let Err(_) = nvim.set_current_buf(&buf) {
-                            if let Ok(new_buf) = nvim.get_current_buf() {
-                                if let Ok(new_buf_num) = new_buf.get_number(&mut nvim) {
-                                    let mut tree_path = gtk::TreePath::new();
-                                    tree_path.down();
-                                    while let Some(iter) = buf_list.get_iter(&tree_path) {
-                                        if new_buf_num as u32 == buf_list.get_value(&iter, 1).get::<u32>().unwrap() {
-                                            buf_tree.set_cursor(&tree_path, Option::<&gtk::TreeViewColumn>::None, false);
-                                            break;
-                                        }
-                                        tree_path.next();
-                                    }
+               if let Err(_) = nvim.set_current_buf(&neovim_lib::neovim_api::Buffer::new(neovim_lib::Value::Integer(neovim_lib::Integer::from(buf_num)))) {
+                    if let Ok(new_buf) = nvim.get_current_buf() {
+                        if let Ok(new_buf_num) = new_buf.get_number(&mut nvim) {
+                           let mut tree_path = gtk::TreePath::new();
+                            tree_path.down();
+                            while let Some(iter) = buf_list.get_iter(&tree_path) {
+                                if new_buf_num as u32 == buf_list.get_value(&iter, 1).get::<u32>().unwrap() {
+                                    buf_tree.set_cursor(&tree_path, Option::<&gtk::TreeViewColumn>::None, false);
+                                    break;
                                 }
+                                tree_path.next();
                             }
                         }
-                        break;
                     }
                 }
             }
@@ -731,10 +727,15 @@ fn build_buf_list(buf_list: &gtk::TreeStore, nvim: &mut NeovimRef) {
 
         let close_icon_name = if is_modified {"edit-delete-symbolic"} else {"window-close-symbolic"};
 
+        let mut path: Vec<&str> = name.split("/").collect();
+        let _e = path.pop();
+        let path = path.join("/");
+        let formatted_name = format!("{} <small>{}</small>", &encode_minimal(&name), substitute_home_for_tilde(&encode_minimal(&path)));
+
         buf_list.set(
             &iter,
             &[0, 1, 2, 3],
-            &[&icon, &buf_id, &name, &close_icon_name],
+            &[&icon, &buf_id, &formatted_name, &close_icon_name],
         );
     }
 }
@@ -780,11 +781,16 @@ fn update_buf_list_added(buf_list: &gtk::TreeStore, id: u32, name: &str) {
     }
 
     let iter = buf_list.insert_after(None, tree_iter.as_ref());
-    let icon = get_icon(vec![name, name.split(".").last().unwrap_or("")]);
+    let file_name = name.split("/").last().unwrap_or(name);
+    let mut path: Vec<&str> = name.split("/").collect();
+    let _e = path.pop();
+    let path = path.join("/");
+    let formatted_name = format!("{} <small>{}</small>", &encode_minimal(&file_name), substitute_home_for_tilde(&encode_minimal(&path)));
+    let icon = get_icon(vec![file_name, file_name.split(".").last().unwrap_or("")]);
     buf_list.set(
         &iter,
         &[0, 1, 2, 3],
-        &[&icon, &id, &if name == "" { "[No Name]" } else { name }, &"window-close-symbolic"]
+        &[&icon, &id, &if name == "" { "[No Name]" } else { &formatted_name }, &"window-close-symbolic"]
     );
 }
 
