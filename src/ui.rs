@@ -490,7 +490,11 @@ impl Ui {
         header_bar.pack_start(&comps.open_btn);
         comps
             .open_btn
-            .connect_clicked(move |_| projects.borrow_mut().show());
+            .connect_clicked(move |btn| {
+                if btn.get_active() {
+                    projects.borrow_mut().show()
+                }
+            });
 
         let new_tab_btn =
             Button::new_from_icon_name(Some("tab-new-symbolic"), gtk::IconSize::SmallToolbar);
