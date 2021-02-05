@@ -36,7 +36,6 @@ mod shell;
 mod shell_dlg;
 mod subscriptions;
 mod tabline;
-mod icon_provider;
 mod theme_helper;
 mod preview;
 mod preview_fonts;

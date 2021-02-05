@@ -5,7 +5,7 @@
   <object class="GtkTreeStore" id="buf_list">
     <columns>
       <!-- column-name icon -->
-      <column type="GdkPixbuf"/>
+      <column type="gchararray"/>
       <!-- column-name buf_id -->
       <column type="guint"/>
       <!-- column-name buf_name -->
@@ -19,7 +19,7 @@
       <!-- column-name dir_name -->
       <column type="gchararray"/>
       <!-- column-name icon_name -->
-      <column type="GdkPixbuf"/>
+      <column type="gchararray"/>
       <!-- column-name path -->
       <column type="gchararray"/>
     </columns>
@@ -66,7 +66,7 @@
       <!-- column-name file_type -->
       <column type="guchar"/>
       <!-- column-name icon_name -->
-      <column type="GdkPixbuf"/>
+      <column type="gchararray"/>
     </columns>
   </object>
   <object class="GtkBox" id="file_browser">
@@ -111,7 +111,7 @@
                 <property name="xpad">6</property>
               </object>
               <attributes>
-                <attribute name="pixbuf">0</attribute>
+                <attribute name="icon-name">0</attribute>
               </attributes>
             </child>
             <child>
@@ -185,7 +185,7 @@
             <property name="xpad">6</property>
           </object>
           <attributes>
-            <attribute name="pixbuf">1</attribute>
+            <attribute name="icon-name">1</attribute>
           </attributes>
         </child>
         <child>
@@ -226,7 +226,7 @@
                     <property name="xpad">6</property>
                   </object>
                   <attributes>
-                    <attribute name="pixbuf">3</attribute>
+                    <attribute name="icon-name">3</attribute>
                   </attributes>
                 </child>
                 <child>

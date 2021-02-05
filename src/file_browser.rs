@@ -11,7 +11,6 @@ use gio;
 use gio::prelude::*;
 use gtk;
 use gtk::prelude::*;
-use gtk::SettingsExt;
 
 use neovim_lib::{NeovimApi, NeovimApiAsync};
 use htmlescape::encode_minimal;
@@ -20,7 +19,10 @@ use crate::misc::{escape_filename, substitute_home_for_tilde};
 use crate::nvim::{ErrorReport, NeovimClient, NeovimRef};
 use crate::shell;
 use crate::subscriptions::SubscriptionKey;
-use crate::icon_provider::{get_icon, get_folder_open, get_folder_closed};
+
+const ICON_FOLDER_OPEN: &str = "folder-open-symbolic";
+const ICON_FOLDER_CLOSED: &str = "folder-symbolic";
+const ICON_FILE: &str = "text-x-generic-symbolic";
 
 struct Components {
     dir_list_model: gtk::TreeStore,
@@ -124,26 +126,9 @@ impl FileBrowserWidget {
         tree_reload(&self.store, &self.state.borrow());
 
         let store = &self.store;
-        let state = &self.state;
-        let dir_list_model = &self.comps.dir_list_model;
-        let dir_list = &self.comps.dir_list;
-        gtk::Settings::get_default().unwrap().connect_property_gtk_theme_name_notify(clone!(store, state, dir_list_model, dir_list => move |_| {
-            tree_reload(&store, &state.borrow());
-            update_dir_list(&state.borrow_mut().current_dir, &dir_list_model, &dir_list);
-        }));
-        let store = &self.store;
-        let state = &self.state;
-        let dir_list_model = &self.comps.dir_list_model;
-        let dir_list = &self.comps.dir_list;
-        gtk::Settings::get_default().unwrap().connect_property_gtk_application_prefer_dark_theme_notify(clone!(store, state, dir_list_model, dir_list => move |_| {
-            tree_reload(&store, &state.borrow());
-            update_dir_list(&state.borrow_mut().current_dir, &dir_list_model, &dir_list);
-        }));
-
-        let store = &self.store;
         let state_ref = &self.state;
         self.tree.connect_test_expand_row(clone!(store, state_ref => move |_, iter, _| {
-            store.set(&iter, &[Column::IconName as u32], &[&get_folder_open()]);
+            store.set(&iter, &[Column::IconName as u32], &[&ICON_FOLDER_OPEN]);
             // We cannot recursively populate all directories. Instead, we have prepared a single
             // empty child entry for all non-empty directories, so the row will be expandable. Now,
             // when a directory is expanded, populate its children.
@@ -167,7 +152,7 @@ impl FileBrowserWidget {
                             .get_value(&iter, Column::FileType as i32)
                             .get::<u8>();
                         if file_type == Some(FileType::Dir as u8) {
-                            store.set(&iter, &[Column::IconName as u32], &[&get_folder_closed()]);
+                            store.set(&iter, &[Column::IconName as u32], &[&ICON_FOLDER_CLOSED]);
                         }
                     }
                 }
@@ -176,7 +161,7 @@ impl FileBrowserWidget {
         }));
 
         self.tree.connect_row_collapsed(clone!(store => move |_, iter, _| {
-            store.set(&iter, &[Column::IconName as u32], &[&get_folder_closed()]);
+            store.set(&iter, &[Column::IconName as u32], &[&ICON_FOLDER_CLOSED]);
         }));
 
 
@@ -347,23 +332,6 @@ impl FileBrowserWidget {
                 }
             }
         }));
-
-        let buf_tree = &self.comps.buf_tree_view;
-        let buf_tree = buf_tree.clone();
-        let buf_list = &self.comps.buf_list;
-        let buf_list = buf_list.clone();
-        let nvim_ref = self.nvim.as_ref().unwrap().clone();
-        let update_func = move |_: &gtk::Settings| {
-            if let (Some(selected_buf), _) = buf_tree.get_cursor() {
-                if let Some(selected_buf) = buf_list.get_value(&buf_list.get_iter(&selected_buf).unwrap(), 1).get::<u32>() {
-                    build_buf_list(&buf_list, &mut nvim_ref.nvim().unwrap());
-                    update_buf_list_selected(&buf_list, &buf_tree, selected_buf);
-                }
-            }
-        };
-        let update_func_clone = update_func.clone();
-        gtk::Settings::get_default().unwrap().connect_property_gtk_theme_name_notify(update_func);
-        gtk::Settings::get_default().unwrap().connect_property_gtk_application_prefer_dark_theme_notify(update_func_clone);
     }
 
     fn connect_events(&self) {
@@ -550,7 +518,7 @@ fn update_dir_list(dir: &str, dir_list_model: &gtk::TreeStore, dir_list: &gtk::C
             dir_list_model.set(
                 &current_iter,
                 &[0, 1, 2],
-                &[&dir_name, &get_folder_closed(), &path_str],
+                &[&dir_name, &ICON_FOLDER_CLOSED, &path_str],
             );
         } else {
             // We reached the last component of the new cwd path. Set the active entry of dir_list
@@ -558,7 +526,7 @@ fn update_dir_list(dir: &str, dir_list_model: &gtk::TreeStore, dir_list: &gtk::C
             dir_list_model.set(
                 &current_iter,
                 &[0, 1, 2],
-                &[&dir_name, &get_folder_open(), &path_str],
+                &[&dir_name, &ICON_FOLDER_OPEN, &path_str],
             );
             dir_list.set_active_iter(Some(&current_iter));
         };
@@ -575,7 +543,7 @@ fn update_dir_list(dir: &str, dir_list_model: &gtk::TreeStore, dir_list: &gtk::C
             // If we didn't change any entries to this point and the list contains further entries,
             // the remaining ones are subdirectories of the cwd and we keep them.
             loop {
-                dir_list_model.set(&iter, &[1], &[&get_folder_closed()]);
+                dir_list_model.set(&iter, &[1], &[&ICON_FOLDER_CLOSED]);
                 if !dir_list_model.iter_next(&iter) {
                     break;
                 }
@@ -634,7 +602,7 @@ fn populate_tree_nodes(
             continue;
         };
         let icon = match file_type {
-            FileType::Dir => get_folder_closed(),
+            FileType::Dir => ICON_FOLDER_CLOSED.to_string(),
             FileType::File => {
                 let file_name = path.split("/").last().unwrap().trim();
                 get_icon(vec![file_name, file_name.split(".").last().unwrap()])
@@ -715,7 +683,7 @@ fn build_buf_list(buf_list: &gtk::TreeStore, nvim: &mut NeovimRef) {
             }
         }
         let iter = buf_list.append(None);
-        let icon: gdk_pixbuf::Pixbuf;
+        let icon: String;
         if name == "" {
             name = String::from("[No Name]");
             icon = get_icon(vec![]);
@@ -745,7 +713,7 @@ fn update_buf_list_modified(buf_list: &gtk::TreeStore, id: u32, is_modified: boo
     tree_path.down();
     while let Some(iter) = buf_list.get_iter(&tree_path) {
         if id == buf_list.get_value(&iter, 1).get::<u32>().unwrap() {
-            let new_icon = gdk_pixbuf::Value::from(if is_modified {"edit-delete-symbolic"} else {"window-close-symbolic"});
+            let new_icon = gtk::Value::from(if is_modified {"edit-delete-symbolic"} else {"window-close-symbolic"});
             buf_list.set_value(&iter, 3, &new_icon);
             break;
         }
@@ -816,4 +784,16 @@ fn update_buf_list_rename(buf_list: &gtk::TreeStore, id: u32, name: &str) {
         }
         tree_path.next();
     }
+}
+
+pub fn get_icon(names: Vec<&str>) -> String {
+    let icon_theme = gtk::IconTheme::get_default().unwrap();
+    let lookup_flags = gtk::IconLookupFlags::empty();
+    for name in names {
+        let name = format!("{}-symbolic", name);
+        if let Some(_) = icon_theme.lookup_icon(&name, 16, lookup_flags) {
+            return name;
+        }
+    }
+    return ICON_FILE.to_string();
 }
