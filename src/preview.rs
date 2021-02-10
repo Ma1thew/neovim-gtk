@@ -173,9 +173,17 @@ impl Preview {
         if ! self.state.borrow().should_refresh {
             return
         }
+
         let state = self.state.borrow();
         let mut nvim = state.nvim.as_ref().unwrap().nvim().unwrap();
         let buffer = nvim.get_current_buf().unwrap();
+
+        if let Ok(listed) = buffer.get_option(&mut nvim, "buflisted") {
+            if ! listed.as_bool().unwrap_or(false) {
+                return
+            }
+        }
+
         let lines = buffer.get_lines(&mut nvim, 0, -1, true).unwrap();
         let lines = lines.join("\n");
         let file_name = format!("file://{}", match buffer.get_name(&mut nvim).unwrap().as_str() {
@@ -201,6 +209,17 @@ impl Preview {
         if ! self.state.borrow().should_refresh {
             return
         }
+
+        let state = self.state.borrow();
+        let mut nvim = state.nvim.as_ref().unwrap().nvim().unwrap();
+        let buffer = nvim.get_current_buf().unwrap();
+
+        if let Ok(listed) = buffer.get_option(&mut nvim, "buflisted") {
+            if ! listed.as_bool().unwrap_or(false) {
+                return
+            }
+        }
+
         let scroll = format!(
             r#"
             for (i = {}; i >= 0; i--) {{
