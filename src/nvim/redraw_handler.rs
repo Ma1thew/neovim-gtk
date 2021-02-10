@@ -126,6 +126,9 @@ pub enum NvimCommand {
     SidebarShowLines,
     SidebarHideLines,
     SidebarToggleLines,
+    SidebarShowHidden,
+    SidebarHideHidden,
+    SidebarToggleHidden,
 }
 
 pub fn call_gui_event(
@@ -211,6 +214,9 @@ pub fn call_gui_event(
                 "SidebarShowLines" => ui.on_command(NvimCommand::SidebarShowLines),
                 "SidebarHideLines" => ui.on_command(NvimCommand::SidebarHideLines),
                 "SidebarToggleLines" => ui.on_command(NvimCommand::SidebarToggleLines),
+                "SidebarShowHidden" => ui.on_command(NvimCommand::SidebarShowHidden),
+                "SidebarHideHidden" => ui.on_command(NvimCommand::SidebarHideHidden),
+                "SidebarToggleHidden" => ui.on_command(NvimCommand::SidebarToggleHidden),
                 "TogglePreview" => ui.preview_set_visible(! ui.preview_get_visible()),
                 "ShowPreview" => ui.preview_set_visible(true),
                 "HidePreview" => ui.preview_set_visible(false),

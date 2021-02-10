@@ -477,6 +477,12 @@ impl Ui {
                 let sidebar = sidebar.borrow();
                 sidebar.set_enable_tree_lines(! sidebar.get_enable_tree_lines());
             }
+            NvimCommand::SidebarShowHidden => sidebar.borrow().set_show_hidden_files(true),
+            NvimCommand::SidebarHideHidden => sidebar.borrow().set_show_hidden_files(false),
+            NvimCommand::SidebarToggleHidden => { 
+                let sidebar = sidebar.borrow();
+                sidebar.set_show_hidden_files(! sidebar.get_show_hidden_files());
+            }
         }
     }
 

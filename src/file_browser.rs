@@ -447,6 +447,17 @@ impl FileBrowserWidget {
         self.tree.get_enable_tree_lines()
     }
 
+    pub fn set_show_hidden_files(&self, setting: bool) {
+        self.comps.show_hidden_checkbox.set_active(setting);
+        let mut state = self.state.borrow_mut();
+        state.show_hidden = setting;
+        tree_reload(&self.store, &state);
+    }
+
+    pub fn get_show_hidden_files(&self) -> bool {
+        self.state.borrow().show_hidden
+    }
+
     pub fn update_buf_list(&self) {
         build_buf_list(&self.comps.buf_list, &mut self.nvim.as_ref().unwrap().nvim().unwrap());
     }
