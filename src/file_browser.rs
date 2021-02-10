@@ -323,6 +323,12 @@ impl FileBrowserWidget {
             }
         }));
 
+        let buf_list = &self.comps.buf_list;
+        let nvim_ref = self.nvim.as_ref().unwrap();
+        shell_state.subscribe(SubscriptionKey::from("DirChanged"), &[], clone!(buf_list, nvim_ref => move |_| {
+            build_buf_list(&buf_list, &mut nvim_ref.nvim().unwrap());
+        }));
+
         let buf_tree = &self.comps.buf_tree_view;
         let buf_list = &self.comps.buf_list;
         shell_state.subscribe(SubscriptionKey::from("BufEnter,BufDelete,BufAdd,BufDelete,BufFilePost"), &["bufnr('%')"], clone!(buf_tree, buf_list => move |args| {
@@ -676,19 +682,21 @@ fn build_buf_list(buf_list: &gtk::TreeStore, nvim: &mut NeovimRef) {
     buf_list.clear();
     for buf in buffers {
         let buf_id = buf.get_number(nvim).unwrap();
-        let mut name = buf.get_name(nvim).unwrap();
+        let name = nvim.eval(&format!("buffer_name({})", buf_id)).unwrap_or(neovim_lib::Value::from(""));
+        let name = name.as_str().unwrap_or("");
         if let Ok(neovim_lib::Value::Boolean(is_listed)) = buf.get_option(nvim, "buflisted") {
             if ! is_listed {
                 continue;
             }
         }
         let iter = buf_list.append(None);
+        let file_name: String;
         let icon: String;
         if name == "" {
-            name = String::from("[No Name]");
+            file_name = String::from("[No Name]");
             icon = get_icon(vec![]);
         } else {
-            name = name.split("/").last().unwrap().to_string();
+            file_name = name.split("/").last().unwrap().to_string();
             icon = get_icon(vec![&name[..], name.split(".").last().unwrap()]);
         }
         let is_modified = if let Ok(neovim_lib::Value::Boolean(is_modified)) = buf.get_option(nvim, "modified") {is_modified} else {false};
@@ -698,7 +706,7 @@ fn build_buf_list(buf_list: &gtk::TreeStore, nvim: &mut NeovimRef) {
         let mut path: Vec<&str> = name.split("/").collect();
         let _e = path.pop();
         let path = path.join("/");
-        let formatted_name = format!("{} <small>{}</small>", &encode_minimal(&name), substitute_home_for_tilde(&encode_minimal(&path)));
+        let formatted_name = format!("{} <small>{}</small>", &encode_minimal(&file_name), substitute_home_for_tilde(&encode_minimal(&path)));
 
         buf_list.set(
             &iter,
